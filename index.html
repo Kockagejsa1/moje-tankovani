@@ -66,7 +66,25 @@ label{font-size:11px;font-weight:700}input{width:100%;margin-top:4px;border:1px 
  .stats{gap:6px}.stat{padding:8px 3px}.stat-value{font-size:15px}
  .refuel{grid-template-columns:58px 1fr 54px 60px 12px}
 }
+
+.ocr-box{background:#f7faff;border:1px solid #d9e6f5;border-radius:10px;padding:10px;margin-bottom:12px}
+.ocr-title{font-weight:800;font-size:13px;margin-bottom:7px;color:#1769d1}
+.ocr-buttons{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ocr-btn{border:1px solid #1769d1;background:#fff;color:#1769d1;border-radius:8px;padding:9px;font-weight:700}
+.ocr-status{font-size:10px;color:#718096;margin-top:7px;min-height:14px}
+.file-input{display:none}
+.history-modal .modalbox{max-width:760px}
+.history-list{max-height:70vh;overflow:auto}
+.history-month{background:#eef3f8;color:#526273;font-weight:800;padding:7px 9px;margin-top:8px;border-radius:7px;font-size:12px}
+.history-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:9px 4px;border-bottom:1px solid #e9edf2}
+.history-main{min-width:0}
+.history-top{font-weight:800;font-size:12px}
+.history-sub{font-size:10px;color:#718096;margin-top:3px;line-height:1.45}
+.history-price{font-weight:800;font-size:13px;white-space:nowrap}
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js"></script>
 </head>
 <body>
 <div class="app">
@@ -104,7 +122,7 @@ label{font-size:11px;font-weight:700}input{width:100%;margin-top:4px;border:1px 
 </section>
 
 <section class="panel last">
- <div class="panel-head"><div class="panel-title">Poslední tankování</div><div class="panel-select">Vše ›</div></div>
+ <div class="panel-head"><div class="panel-title">Poslední tankování</div><button class="panel-select" onclick="showHistory()">Všech 80 ›</button></div>
  <div id="history"><div style="padding:12px;color:#8793a0;font-size:11px">Zatím žádné tankování.</div></div>
 </section>
 
@@ -124,47 +142,234 @@ label{font-size:11px;font-weight:700}input{width:100%;margin-top:4px;border:1px 
 
 <div class="modal" id="modal"><div class="modalbox">
 <h2>Nové tankování</h2>
+
+<div class="ocr-box">
+  <div class="ocr-title">📷 Automaticky načíst z fotografií</div>
+  <div class="ocr-buttons">
+    <button class="ocr-btn" onclick="document.getElementById('receiptFile').click()">🧾 Účtenka</button>
+    <button class="ocr-btn" onclick="document.getElementById('odoFile').click()">🚗 Tachometr</button>
+  </div>
+  <input class="file-input" id="receiptFile" type="file" accept="image/*" capture="environment" onchange="readReceipt(this.files[0])">
+  <input class="file-input" id="odoFile" type="file" accept="image/*" capture="environment" onchange="readOdometer(this.files[0])">
+  <div class="ocr-status" id="ocrStatus"></div>
+</div>
+
 <div class="form">
 <label>Datum<input type="date" id="date"></label>
 <label>Stav tachometru<input type="number" id="odo"></label>
-<label>Litry<input type="number" step=".01" id="l"></label>
+<label>Litry<input type="number" step=".001" id="l"></label>
 <label>Cena za litr<input type="number" step=".01" id="p"></label>
+<label class="wide">Celkem Kč<input type="number" step=".01" id="total"></label>
 <label class="wide">Čerpací stanice<input id="station" placeholder="Např. MOL"></label>
 <label class="wide"><input type="checkbox" id="full" style="width:auto"> Plná nádrž</label>
 </div>
 <div class="modal-actions"><button class="save" onclick="save()">Uložit</button><button onclick="closeModal()">Zrušit</button></div>
 </div></div>
 
+<div class="modal history-modal" id="historyModal"><div class="modalbox">
+<h2>Historie tankování</h2>
+<div class="history-list" id="historyList"></div>
+<div class="modal-actions"><button onclick="closeHistory()">Zavřít</button></div>
+</div></div>
+
 <script>
-let data=JSON.parse(localStorage.getItem('mojeTankovani')||'[]');
-function openModal(){modal.style.display='flex';date.value=new Date().toISOString().slice(0,10)}
+const importedHistory = [{"date":"2023-06-09 17:15:59","odometerKm":27.0,"fuelType":"Benzín","liters":42.229,"pricePerLiter":36.3,"totalPrice":1532.9,"fullTank":true,"consumptionFromDrivvo":"0 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-06-25 12:49:15","odometerKm":544.0,"fuelType":"Benzín","liters":36.189,"pricePerLiter":36.5,"totalPrice":1320.9,"fullTank":true,"consumptionFromDrivvo":"7 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-07-16 14:55:58","odometerKm":1157.0,"fuelType":"Benzín","liters":37.69,"pricePerLiter":36.1,"totalPrice":1360.6,"fullTank":true,"consumptionFromDrivvo":"6,148 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-07-22 05:36:58","odometerKm":1388.0,"fuelType":"Benzín","liters":20.07,"pricePerLiter":35.5,"totalPrice":712.5,"fullTank":true,"consumptionFromDrivvo":"8,688 L/100km","station":"Tank ONO","paymentMethod":"","note":""},{"date":"2023-07-28 08:22:41","odometerKm":1980.0,"fuelType":"Benzín","liters":30.37,"pricePerLiter":45.538,"totalPrice":1383.0,"fullTank":true,"consumptionFromDrivvo":"5,13 L/100km","station":"Esso","paymentMethod":"","note":"Bibione"},{"date":"2023-07-29 15:10:11","odometerKm":2524.0,"fuelType":"Benzín","liters":30.019,"pricePerLiter":35.9,"totalPrice":1077.7,"fullTank":true,"consumptionFromDrivvo":"5,518 L/100km","station":"Tank ONO","paymentMethod":"","note":""},{"date":"2023-08-12 17:50:01","odometerKm":3147.0,"fuelType":"Benzín","liters":38.951,"pricePerLiter":38.5,"totalPrice":1499.6,"fullTank":true,"consumptionFromDrivvo":"6,252 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-09-17 15:51:17","odometerKm":3720.0,"fuelType":"Benzín","liters":37.599,"pricePerLiter":39.9,"totalPrice":1500.2,"fullTank":true,"consumptionFromDrivvo":"6,562 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-09-29 15:12:31","odometerKm":4276.0,"fuelType":"Benzín","liters":36.16,"pricePerLiter":39.9,"totalPrice":1442.784,"fullTank":true,"consumptionFromDrivvo":"6,504 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-10-20 14:54:15","odometerKm":4916.0,"fuelType":"Benzín","liters":38.651,"pricePerLiter":37.5,"totalPrice":1449.4,"fullTank":true,"consumptionFromDrivvo":"6,039 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-11-05 10:01:47","odometerKm":5444.0,"fuelType":"Benzín","liters":33.401,"pricePerLiter":37.9,"totalPrice":1265.9,"fullTank":true,"consumptionFromDrivvo":"6,326 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-11-26 14:49:11","odometerKm":5935.0,"fuelType":"Benzín","liters":35.29,"pricePerLiter":35.5,"totalPrice":1252.8,"fullTank":true,"consumptionFromDrivvo":"7,187 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2023-12-18 15:26:08","odometerKm":6355.0,"fuelType":"Benzín","liters":28.4,"pricePerLiter":34.5,"totalPrice":979.8,"fullTank":true,"consumptionFromDrivvo":"6,762 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-01-22 14:58:17","odometerKm":6863.0,"fuelType":"Benzín","liters":37.581,"pricePerLiter":35.3,"totalPrice":1326.6,"fullTank":true,"consumptionFromDrivvo":"7,398 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-02-25 13:08:18","odometerKm":7391.0,"fuelType":"Benzín","liters":39.479,"pricePerLiter":36.5,"totalPrice":1441.0,"fullTank":true,"consumptionFromDrivvo":"7,477 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-03-14 15:47:13","odometerKm":7747.0,"fuelType":"Benzín","liters":24.321,"pricePerLiter":36.5,"totalPrice":887.7,"fullTank":true,"consumptionFromDrivvo":"6,832 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-04-06 17:45:42","odometerKm":8381.0,"fuelType":"Benzín","liters":41.54,"pricePerLiter":38.9,"totalPrice":1615.9,"fullTank":true,"consumptionFromDrivvo":"6,552 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-04-27 16:57:24","odometerKm":8835.0,"fuelType":"Benzín","liters":28.85,"pricePerLiter":38.7,"totalPrice":1116.5,"fullTank":true,"consumptionFromDrivvo":"6,355 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-05-25 17:58:06","odometerKm":9423.0,"fuelType":"Benzín","liters":39.349,"pricePerLiter":36.7,"totalPrice":1444.1,"fullTank":true,"consumptionFromDrivvo":"6,692 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-06-12 20:47:22","odometerKm":9995.0,"fuelType":"Benzín","liters":37.651,"pricePerLiter":36.7,"totalPrice":1381.8,"fullTank":true,"consumptionFromDrivvo":"6,582 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-06-30 15:22:51","odometerKm":10571.0,"fuelType":"Benzín","liters":37.17,"pricePerLiter":37.1,"totalPrice":1379.0,"fullTank":true,"consumptionFromDrivvo":"6,453 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-07-13 17:11:54","odometerKm":11194.0,"fuelType":"Benzín","liters":39.309,"pricePerLiter":36.9,"totalPrice":1450.5,"fullTank":true,"consumptionFromDrivvo":"6,31 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-07-25 16:44:06","odometerKm":11602.0,"fuelType":"Benzín","liters":27.849,"pricePerLiter":37.1,"totalPrice":1033.198,"fullTank":true,"consumptionFromDrivvo":"6,826 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-07-27 10:28:39","odometerKm":11802.0,"fuelType":"Benzín","liters":12.78,"pricePerLiter":35.9,"totalPrice":458.802,"fullTank":true,"consumptionFromDrivvo":"6,39 L/100km","station":"Tank ONO","paymentMethod":"","note":"Dolní Dvořiště"},{"date":"2024-08-03 08:55:56","odometerKm":12359.0,"fuelType":"Benzín","liters":35.359,"pricePerLiter":49.621,"totalPrice":1754.55,"fullTank":true,"consumptionFromDrivvo":"6,348 L/100km","station":"Lignano","paymentMethod":"","note":""},{"date":"2024-08-03 12:58:29","odometerKm":12890.0,"fuelType":"Benzín","liters":18.62,"pricePerLiter":53.706,"totalPrice":1000.0,"fullTank":false,"consumptionFromDrivvo":"6,265 L/100km","station":"Eben (Nord) A10/tauernautobahn-Ebe.","paymentMethod":"","note":""},{"date":"2024-08-03 16:55:50","odometerKm":13139.0,"fuelType":"Benzín","liters":30.251,"pricePerLiter":35.9,"totalPrice":1086.0,"fullTank":true,"consumptionFromDrivvo":"6,265 L/100km","station":"Tank ONO","paymentMethod":"","note":""},{"date":"2024-08-11 17:23:15","odometerKm":13722.0,"fuelType":"Benzín","liters":36.471,"pricePerLiter":35.9,"totalPrice":1309.309,"fullTank":true,"consumptionFromDrivvo":"6,256 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-08-30 15:26:08","odometerKm":14424.0,"fuelType":"Benzín","liters":37.699,"pricePerLiter":35.9,"totalPrice":1353.4,"fullTank":true,"consumptionFromDrivvo":"5,37 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-09-19 19:29:08","odometerKm":14981.0,"fuelType":"Benzín","liters":38.551,"pricePerLiter":33.2,"totalPrice":1279.9,"fullTank":true,"consumptionFromDrivvo":"6,921 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-10-08 16:54:32","odometerKm":15483.0,"fuelType":"Benzín","liters":36.271,"pricePerLiter":33.9,"totalPrice":1229.6,"fullTank":true,"consumptionFromDrivvo":"7,225 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-10-27 09:47:20","odometerKm":15979.0,"fuelType":"Benzín","liters":37.249,"pricePerLiter":34.1,"totalPrice":1270.2,"fullTank":true,"consumptionFromDrivvo":"7,51 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-11-14 19:08:15","odometerKm":16579.0,"fuelType":"Benzín","liters":40.481,"pricePerLiter":34.3,"totalPrice":1388.5,"fullTank":true,"consumptionFromDrivvo":"6,747 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-12-01 14:56:45","odometerKm":17068.0,"fuelType":"Benzín","liters":36.31,"pricePerLiter":33.5,"totalPrice":1216.4,"fullTank":true,"consumptionFromDrivvo":"7,425 L/100km","station":"Tank ONO","paymentMethod":"","note":""},{"date":"2024-12-18 18:17:11","odometerKm":17496.0,"fuelType":"Benzín","liters":33.689,"pricePerLiter":34.1,"totalPrice":1148.8,"fullTank":true,"consumptionFromDrivvo":"7,871 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2024-12-28 19:24:14","odometerKm":17982.0,"fuelType":"Benzín","liters":33.791,"pricePerLiter":34.4,"totalPrice":1162.4,"fullTank":true,"consumptionFromDrivvo":"6,953 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-01-26 13:23:29","odometerKm":18435.0,"fuelType":"Benzín","liters":34.901,"pricePerLiter":35.3,"totalPrice":1232.0,"fullTank":true,"consumptionFromDrivvo":"7,704 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-02-09 13:34:37","odometerKm":18799.0,"fuelType":"Benzín","liters":28.079,"pricePerLiter":35.3,"totalPrice":991.2,"fullTank":true,"consumptionFromDrivvo":"7,714 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-02-27 17:02:36","odometerKm":19326.0,"fuelType":"Benzín","liters":39.181,"pricePerLiter":34.2,"totalPrice":1340.0,"fullTank":true,"consumptionFromDrivvo":"7,435 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-03-21 17:39:56","odometerKm":19754.0,"fuelType":"Benzín","liters":34.389,"pricePerLiter":32.9,"totalPrice":1131.4,"fullTank":true,"consumptionFromDrivvo":"8,035 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-04-12 08:42:37","odometerKm":20328.0,"fuelType":"Benzín","liters":41.371,"pricePerLiter":32.9,"totalPrice":1361.1,"fullTank":true,"consumptionFromDrivvo":"7,207 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-04-24 20:07:24","odometerKm":20841.0,"fuelType":"Benzín","liters":33.9,"pricePerLiter":31.9,"totalPrice":1081.4,"fullTank":true,"consumptionFromDrivvo":"6,608 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-05-10 08:55:38","odometerKm":21385.0,"fuelType":"Benzín","liters":39.729,"pricePerLiter":31.7,"totalPrice":1259.4,"fullTank":true,"consumptionFromDrivvo":"7,303 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-05-22 17:22:18","odometerKm":21962.0,"fuelType":"Benzín","liters":41.081,"pricePerLiter":32.1,"totalPrice":1318.7,"fullTank":true,"consumptionFromDrivvo":"7,12 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-06-08 14:45:19","odometerKm":22586.0,"fuelType":"Benzín","liters":8.85,"pricePerLiter":33.9,"totalPrice":300.0,"fullTank":false,"consumptionFromDrivvo":"6,255 L/100km","station":"Mirošovice","paymentMethod":"","note":""},{"date":"2025-06-08 15:27:01","odometerKm":22629.0,"fuelType":"Benzín","liters":32.869,"pricePerLiter":32.7,"totalPrice":1074.8,"fullTank":true,"consumptionFromDrivvo":"6,255 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-06-26 07:08:25","odometerKm":23162.0,"fuelType":"Benzín","liters":37.21,"pricePerLiter":32.9,"totalPrice":1224.2,"fullTank":true,"consumptionFromDrivvo":"6,981 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-07-08 14:44:40","odometerKm":23736.0,"fuelType":"Benzín","liters":40.274,"pricePerLiter":32.9,"totalPrice":1325.0,"fullTank":true,"consumptionFromDrivvo":"7,016 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-07-19 15:34:28","odometerKm":24293.0,"fuelType":"Benzín","liters":37.581,"pricePerLiter":32.9,"totalPrice":1236.4,"fullTank":true,"consumptionFromDrivvo":"6,747 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-07-20 04:27:10","odometerKm":24400.0,"fuelType":"Benzín","liters":7.339,"pricePerLiter":38.9,"totalPrice":285.5,"fullTank":true,"consumptionFromDrivvo":"6,859 L/100km","station":"MOL","paymentMethod":"","note":""},{"date":"2025-08-07 09:08:42","odometerKm":26631.0,"fuelType":"Benzín","liters":36.771,"pricePerLiter":32.3,"totalPrice":1187.7,"fullTank":true,"consumptionFromDrivvo":"1,648 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-08-22 18:49:29","odometerKm":27181.0,"fuelType":"Benzín","liters":41.941,"pricePerLiter":32.1,"totalPrice":1346.3,"fullTank":true,"consumptionFromDrivvo":"7,626 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-09-07 16:19:12","odometerKm":27746.0,"fuelType":"Benzín","liters":38.879,"pricePerLiter":32.3,"totalPrice":1255.8,"fullTank":true,"consumptionFromDrivvo":"6,881 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-09-21 14:52:02","odometerKm":28267.0,"fuelType":"Benzín","liters":32.859,"pricePerLiter":32.6,"totalPrice":1071.2,"fullTank":true,"consumptionFromDrivvo":"6,307 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-10-20 21:33:55","odometerKm":28925.0,"fuelType":"Benzín","liters":37.39,"pricePerLiter":32.8,"totalPrice":1226.4,"fullTank":true,"consumptionFromDrivvo":"5,682 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-11-08 07:17:17","odometerKm":29412.0,"fuelType":"Benzín","liters":36.102,"pricePerLiter":32.5,"totalPrice":1173.3,"fullTank":true,"consumptionFromDrivvo":"7,413 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-11-30 10:58:24","odometerKm":29989.0,"fuelType":"Benzín","liters":40.009,"pricePerLiter":32.5,"totalPrice":1300.3,"fullTank":true,"consumptionFromDrivvo":"6,934 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-12-16 14:17:30","odometerKm":30504.0,"fuelType":"Benzín","liters":38.0,"pricePerLiter":31.5,"totalPrice":1197.0,"fullTank":true,"consumptionFromDrivvo":"7,379 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2025-12-30 14:29:56","odometerKm":30980.0,"fuelType":"Benzín","liters":36.939,"pricePerLiter":30.9,"totalPrice":1141.4,"fullTank":true,"consumptionFromDrivvo":"7,76 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-02-01 13:54:46","odometerKm":31398.0,"fuelType":"Benzín","liters":33.442,"pricePerLiter":30.8,"totalPrice":1030.0,"fullTank":true,"consumptionFromDrivvo":"8 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-03-04 18:35:08","odometerKm":31834.0,"fuelType":"Benzín","liters":35.161,"pricePerLiter":34.1,"totalPrice":1199.0,"fullTank":true,"consumptionFromDrivvo":"8,065 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-03-22 09:38:08","odometerKm":32391.0,"fuelType":"Benzín","liters":42.609,"pricePerLiter":39.9,"totalPrice":1700.1,"fullTank":true,"consumptionFromDrivvo":"7,65 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-04-05 18:51:41","odometerKm":32880.0,"fuelType":"Benzín","liters":12.23,"pricePerLiter":40.9,"totalPrice":500.2,"fullTank":false,"consumptionFromDrivvo":"6,684 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-04-10 16:51:01","odometerKm":33145.0,"fuelType":"Benzín","liters":38.171,"pricePerLiter":40.9,"totalPrice":1561.2,"fullTank":true,"consumptionFromDrivvo":"6,684 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-04-26 15:42:49","odometerKm":33693.0,"fuelType":"Benzín","liters":41.509,"pricePerLiter":38.9,"totalPrice":1614.7,"fullTank":true,"consumptionFromDrivvo":"7,575 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-05-23 16:36:05","odometerKm":34263.0,"fuelType":"Benzín","liters":39.661,"pricePerLiter":41.9,"totalPrice":1661.8,"fullTank":true,"consumptionFromDrivvo":"6,958 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-06-07 09:15:18","odometerKm":34865.0,"fuelType":"Benzín","liters":40.091,"pricePerLiter":39.5,"totalPrice":1583.6,"fullTank":true,"consumptionFromDrivvo":"6,66 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-06-21 13:01:16","odometerKm":35359.0,"fuelType":"Benzín","liters":31.611,"pricePerLiter":35.5,"totalPrice":1122.2,"fullTank":true,"consumptionFromDrivvo":"6,399 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-07-08 15:59:02","odometerKm":35899.0,"fuelType":"Benzín","liters":37.501,"pricePerLiter":38.5,"totalPrice":1443.8,"fullTank":true,"consumptionFromDrivvo":"6,945 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-07-15 17:56:36","odometerKm":36134.0,"fuelType":"Benzín","liters":17.691,"pricePerLiter":39.5,"totalPrice":698.8,"fullTank":true,"consumptionFromDrivvo":"7,528 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-07-23 16:50:37","odometerKm":36642.0,"fuelType":"Benzín","liters":33.841,"pricePerLiter":41.5,"totalPrice":1404.4,"fullTank":true,"consumptionFromDrivvo":"6,662 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-07-25 16:50:25","odometerKm":36789.0,"fuelType":"Benzín","liters":9.301,"pricePerLiter":41.5,"totalPrice":386.0,"fullTank":true,"consumptionFromDrivvo":"6,327 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-07-27 11:22:54","odometerKm":37406.0,"fuelType":"Benzín","liters":40.36,"pricePerLiter":41.634,"totalPrice":1680.33,"fullTank":true,"consumptionFromDrivvo":"6,541 L/100km","station":"BP Swinousti","paymentMethod":"","note":""},{"date":"2026-07-30 20:36:45","odometerKm":37985.0,"fuelType":"Benzín","liters":11.71,"pricePerLiter":42.7,"totalPrice":500.0,"fullTank":false,"consumptionFromDrivvo":"7,207 L/100km","station":"Orlen","paymentMethod":"","note":""},{"date":"2026-07-31 12:51:45","odometerKm":38043.0,"fuelType":"Benzín","liters":34.2,"pricePerLiter":38.5,"totalPrice":1316.7,"fullTank":true,"consumptionFromDrivvo":"7,207 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-08-04 15:42:38","odometerKm":38669.0,"fuelType":"Benzín","liters":11.674,"pricePerLiter":42.9,"totalPrice":500.8,"fullTank":true,"consumptionFromDrivvo":"1,865 L/100km","station":"Ms OIl MĚCHENICE","paymentMethod":"","note":""},{"date":"2026-08-08 12:36:57","odometerKm":38786.0,"fuelType":"Benzín","liters":39.441,"pricePerLiter":39.9,"totalPrice":1573.7,"fullTank":true,"consumptionFromDrivvo":"33,71 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-08-19 18:26:46","odometerKm":39313.0,"fuelType":"Benzín","liters":38.16,"pricePerLiter":40.5,"totalPrice":1545.5,"fullTank":true,"consumptionFromDrivvo":"7,241 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-09-05 13:12:59","odometerKm":39762.0,"fuelType":"Benzín","liters":29.471,"pricePerLiter":39.9,"totalPrice":1175.9,"fullTank":true,"consumptionFromDrivvo":"6,564 L/100km","station":"MAKRO","paymentMethod":"","note":""},{"date":"2026-09-20 15:11:03","odometerKm":40372.0,"fuelType":"Benzín","liters":40.719,"pricePerLiter":44.9,"totalPrice":1828.3,"fullTank":true,"consumptionFromDrivvo":"6,675 L/100km","station":"MAKRO","paymentMethod":"","note":""}];
+let data = JSON.parse(localStorage.getItem('mojeTankovani') || '[]');
+
+function normalizeRecord(x){
+  return {
+    date:x.date,
+    odometer:Number(x.odometerKm ?? x.odometer ?? 0),
+    liters:Number(x.liters ?? 0),
+    price:Number(x.pricePerLiter ?? x.price ?? 0),
+    total:Number(x.totalPrice ?? x.total ?? 0),
+    station:x.station || '',
+    full:Boolean(x.fullTank ?? x.full ?? false),
+    fuelType:x.fuelType || 'Benzín',
+    note:x.note || '',
+    drivvo:x.consumptionFromDrivvo || ''
+  };
+}
+
+// First launch after this version: load the 80 imported Drivvo records.
+// Later launches keep the user's own local data.
+if (!localStorage.getItem('mojeTankovani') || JSON.parse(localStorage.getItem('mojeTankovani')||'[]').length===0) {
+  data = importedHistory.map(normalizeRecord);
+  localStorage.setItem('mojeTankovani', JSON.stringify(data));
+}
+
+function openModal(){
+  modal.style.display='flex';
+  date.value=new Date().toISOString().slice(0,10);
+  document.getElementById('ocrStatus').textContent='';
+}
 function closeModal(){modal.style.display='none'}
+function setStatus(t){document.getElementById('ocrStatus').textContent=t||''}
+
+function parseNum(v){
+  if(v==null)return null;
+  const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.').replace(/[^0-9.]/g,''));
+  return Number.isFinite(n)?n:null;
+}
+function parseDateFromText(t){
+  const m=t.match(/\b(20\d{2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})\b/) ||
+          t.match(/\b(\d{1,2})[.\-\/](\d{1,2})[.\-\/](20\d{2})\b/);
+  if(!m)return null;
+  if(m[1].length===4) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+}
+function findFirst(text, patterns){
+  for(const p of patterns){const m=text.match(p); if(m)return parseNum(m[1]);}
+  return null;
+}
+async function ocrImage(file){
+  if(!file)return;
+  setStatus('Načítám OCR… fotografie se nikam neukládá.');
+  try{
+    const {data:{text}} = await Tesseract.recognize(file,'eng',{
+      logger:m=>{
+        if(m.status==='recognizing text' && m.progress!=null)
+          setStatus('OCR: '+Math.round(m.progress*100)+' %');
+      }
+    });
+    return text;
+  }catch(e){
+    console.error(e);
+    setStatus('OCR se nepodařilo dokončit. Údaje můžeš zadat ručně.');
+    return '';
+  }
+}
+async function readOdometer(file){
+  const text=await ocrImage(file);
+  if(!text)return;
+  // Prefer a long integer near km; fallback to the largest plausible number.
+  const candidates=[...text.replace(/,/g,'.').matchAll(/\b(\d{3,6})(?:\s*(?:km|k m))?\b/gi)].map(m=>Number(m[1])).filter(n=>n>=0&&n<=999999);
+  if(candidates.length) document.getElementById('odo').value=Math.max(...candidates);
+  setStatus('Tachometr načten. Zkontroluj hodnotu před uložením.');
+}
+async function readReceipt(file){
+  const text=await ocrImage(file);
+  if(!text)return;
+  const t=text.replace(/\r/g,'\n');
+
+  // Date from EXIF when available; otherwise OCR text.
+  try{
+    if(window.exifr){
+      const exif=await exifr.parse(file,['DateTimeOriginal','CreateDate']);
+      const d=exif?.DateTimeOriginal || exif?.CreateDate;
+      if(d instanceof Date && !isNaN(d)) document.getElementById('date').value=d.toISOString().slice(0,10);
+    }
+  }catch(e){}
+
+  const ocrDate=parseDateFromText(t);
+  if(ocrDate && !document.getElementById('date').value) document.getElementById('date').value=ocrDate;
+
+  // Common receipt patterns: liters, price/litre and total.
+  const liters=findFirst(t,[
+    /(\d+[.,]\d{1,3})\s*(?:L|l)\b/i,
+    /(?:lit(?:r|ry)|liter|litres?)\s*[:=]?\s*(\d+[.,]\d{1,3})/i
+  ]);
+  const price=findFirst(t,[
+    /(\d{2,3}[.,]\d{1,2})\s*(?:Kč|CZK)\s*\/?\s*[lL]\b/i,
+    /(\d{2,3}[.,]\d{1,2})\s*[Kk][čc]\s*[\/]?\s*[lL]\b/i,
+    /(?:price|cena)\s*[:=]?\s*(\d{2,3}[.,]\d{1,2})/i
+  ]);
+  const total=findFirst(t,[
+    /(?:TOTAL|CELKEM|SUM|AMOUNT|ČÁSTKA)[^0-9]{0,20}(\d[\d\s]*[.,]\d{2})/i,
+    /(\d[\d\s]*[.,]\d{2})\s*(?:Kč|CZK)\b/i
+  ]);
+
+  if(liters!=null) document.getElementById('l').value=liters.toFixed(3);
+  if(price!=null) document.getElementById('p').value=price.toFixed(2);
+  if(total!=null) document.getElementById('total').value=total.toFixed(2);
+  if(liters!=null && price!=null && total==null) document.getElementById('total').value=(liters*price).toFixed(2);
+
+  // Try to find a likely station name from the first text lines.
+  const lines=t.split('\n').map(x=>x.trim()).filter(x=>x.length>2);
+  const stationLine=lines.find(x=>/[A-Za-zÁ-ž]{3,}/.test(x) && !/(total|celkem|benz|diesel|litre|liter|kč|czk|date|datum|payment|price|cena)/i.test(x));
+  if(stationLine && !document.getElementById('station').value) document.getElementById('station').value=stationLine.slice(0,50);
+
+  setStatus('Účtenka načtena. Zkontroluj všechny hodnoty před uložením.');
+}
+
 function save(){
- let d=date.value,o=+odo.value,l=+document.getElementById('l').value,p=+document.getElementById('p').value,s=station.value,f=full.checked;
- if(!d||!o||!l||!p){alert('Vyplň datum, tachometr, litry a cenu.');return}
- data.push({date:d,odometer:o,liters:l,price:p,total:l*p,station:s,full:f});
- data.sort((a,b)=>a.odometer-b.odometer);localStorage.setItem('mojeTankovani',JSON.stringify(data));closeModal();render()
+  let d=date.value,o=+odo.value,l=+document.getElementById('l').value;
+  let p=+document.getElementById('p').value,s=station.value,f=full.checked;
+  let tot=+document.getElementById('total').value;
+  if(!d||!o||!l||!p){alert('Vyplň nebo zkontroluj datum, tachometr, litry a cenu.');return}
+  if(!tot)tot=l*p;
+  data.push({date:d,odometer:o,liters:l,price:p,total:tot,station:s,full:f,fuelType:'Benzín',note:''});
+  data.sort((a,b)=>a.odometer-b.odometer);
+  localStorage.setItem('mojeTankovani',JSON.stringify(data));
+  closeModal();render();
 }
-function calc(){
- let fs=data.filter(x=>x.full),ints=[];
- for(let i=1;i<fs.length;i++){let dist=fs[i].odometer-fs[i-1].odometer;if(dist<=0)continue;let ls=data.filter(x=>x.odometer>fs[i-1].odometer&&x.odometer<=fs[i].odometer).reduce((a,x)=>a+x.liters,0);ints.push(ls/dist*100)}
- if(!ints.length)return null;return ints.reduce((a,x)=>a+x,0)/ints.length
+
+function calcLast(){
+  const fs=[...data].filter(x=>x.full).sort((a,b)=>a.odometer-b.odometer);
+  if(fs.length<2)return null;
+  const cur=fs[fs.length-1], prev=fs[fs.length-2];
+  const dist=cur.odometer-prev.odometer;
+  if(dist<=0)return null;
+  const liters=data.filter(x=>x.odometer>prev.odometer&&x.odometer<=cur.odometer).reduce((a,x)=>a+x.liters,0);
+  return liters/dist*100;
 }
+function calcLong(){
+  const fs=[...data].filter(x=>x.full).sort((a,b)=>a.odometer-b.odometer);
+  let liters=0,dist=0;
+  for(let i=1;i<fs.length;i++){
+    const d=fs[i].odometer-fs[i-1].odometer;
+    if(d<=0)continue;
+    const l=data.filter(x=>x.odometer>fs[i-1].odometer&&x.odometer<=fs[i].odometer).reduce((a,x)=>a+x.liters,0);
+    liters+=l;dist+=d;
+  }
+  return dist?liters/dist*100:null;
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+
 function render(){
- let totalL=data.reduce((a,x)=>a+x.liters,0),totalC=data.reduce((a,x)=>a+x.total,0);
- document.getElementById('liters').textContent=totalL.toFixed(0);
- document.getElementById('priceAvg').textContent=totalL?(totalC/totalL).toFixed(2):'—';
- let dist=data.length>1?Math.max(...data.map(x=>x.odometer))-Math.min(...data.map(x=>x.odometer)):0;
- document.getElementById('distance').textContent=dist.toLocaleString('cs-CZ');
- let c=calc();document.getElementById('avg').textContent=c?c.toFixed(1):'—';
- let h=document.getElementById('history');
- if(!data.length){h.innerHTML='<div style="padding:12px;color:#8793a0;font-size:11px">Zatím žádné tankování.</div>';return}
- h.innerHTML=[...data].reverse().slice(0,5).map(x=>{
-  let dt=x.date.split('-').reverse().join('.');
-  return `<div class="refuel"><div class="refuel-date">${dt}</div><div><span class="refuel-station">${x.station||'Čerpací stanice'}</span><span class="refuel-sub">${x.odometer.toLocaleString('cs-CZ')} km · ${x.price.toFixed(2)} Kč/l</span></div><div>${x.liters.toFixed(1)} l</div><div class="refuel-price">${x.total.toFixed(0)} Kč</div><div class="refuel-arrow">›</div></div>`
- }).join('')
+  const totalL=data.reduce((a,x)=>a+x.liters,0), totalC=data.reduce((a,x)=>a+x.total,0);
+  document.getElementById('liters').textContent=totalL.toFixed(0);
+  document.getElementById('priceAvg').textContent=totalL?(totalC/totalL).toFixed(2):'—';
+  const dist=data.length>1?Math.max(...data.map(x=>x.odometer))-Math.min(...data.map(x=>x.odometer)):0;
+  document.getElementById('distance').textContent=dist.toLocaleString('cs-CZ');
+  const c=calcLast(); document.getElementById('avg').textContent=c?c.toFixed(2):'—';
+
+  const recent=[...data].sort((a,b)=>b.odometer-a.odometer).slice(0,5);
+  const h=document.getElementById('history');
+  h.innerHTML=recent.length?recent.map(x=>{
+    const dt=x.date.includes(' ')?x.date:x.date;
+    return `<div class="refuel"><div class="refuel-date">${esc(dt.split(' ')[0].split('-').reverse().join('.'))}</div><div><span class="refuel-station">${esc(x.station||'Čerpací stanice')}</span><span class="refuel-sub">${Number(x.odometer).toLocaleString('cs-CZ')} km · ${Number(x.price).toFixed(2)} Kč/l</span></div><div>${Number(x.liters).toFixed(1)} l</div><div class="refuel-price">${Number(x.total).toFixed(0)} Kč</div><div class="refuel-arrow">›</div></div>`;
+  }).join(''):'<div style="padding:12px;color:#8793a0;font-size:11px">Zatím žádné tankování.</div>';
 }
+
+function showHistory(){
+  const rows=[...data].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  let current='';
+  let out='';
+  for(const x of rows){
+    const month=String(x.date).slice(0,7);
+    if(month!==current){
+      current=month;
+      out+=`<div class="history-month">${esc(month)}</div>`;
+    }
+    const dateText=String(x.date).replace(' ',' · ');
+    const cons=x.drivvo || '';
+    out+=`<div class="history-row">
+      <div class="history-main">
+        <div class="history-top">⛽ ${esc(x.fuelType||'Benzín')} ${x.full?'· Plná nádrž':''}</div>
+        <div class="history-sub">${Number(x.odometer).toLocaleString('cs-CZ')} km · ${Number(x.liters).toFixed(3)} L · ${Number(x.price).toFixed(2)} Kč/L · ${esc(dateText)}</div>
+        <div class="history-sub">${esc(x.station||'')} ${cons?'· spotřeba '+esc(cons):''}</div>
+      </div>
+      <div class="history-price">${Number(x.total).toFixed(2)} Kč</div>
+    </div>`;
+  }
+  document.getElementById('historyList').innerHTML=out;
+  document.getElementById('historyModal').style.display='flex';
+}
+function closeHistory(){document.getElementById('historyModal').style.display='none'}
+
 render();
 </script>
+
 </body>
 </html>
