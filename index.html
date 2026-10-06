@@ -103,7 +103,14 @@ label{font-size:11px;font-weight:700}input{width:100%;margin-top:4px;border:1px 
  .refuel-date .day{font-size:14px}.refuel-station{font-size:11px}.refuel-sub{font-size:9px}.refuel-price{font-size:11px}
 }
 
+
+.bottom{z-index:1000}.bottom .nav button{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}.bottom .nav button:active{transform:scale(.96)}.bottom .nav button.active{font-weight:700}.bottom .nav-icon{display:block;font-size:23px;line-height:24px;margin-bottom:4px}.bottom .nav button span:last-child{display:block}.stats-modal{z-index:1100}
 </style>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1769d1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 <div class="app">
@@ -152,11 +159,11 @@ label{font-size:11px;font-weight:700}input{width:100%;margin-top:4px;border:1px 
 </main>
 </div>
 
-<nav class="bottom"><div class="nav">
- <button class="active"><span class="nav-icon">⌂</span>Domů</button>
- <button><span class="nav-icon">⛽</span>Tankování</button>
- <button><span class="nav-icon">▥</span>Statistiky</button>
- <button><span class="nav-icon">▱</span>Vozidla</button>
+<nav class="bottom" aria-label="Hlavní navigace"><div class="nav">
+ <button type="button" class="active" data-nav="home"><span class="nav-icon">⌂</span><span>Domů</span></button>
+ <button type="button" data-nav="refuels"><span class="nav-icon">⛽</span><span>Tankování</span></button>
+ <button type="button" data-nav="stats"><span class="nav-icon">▥</span><span>Statistiky</span></button>
+ <button type="button" data-nav="vehicles"><span class="nav-icon">▱</span><span>Vozidla</span></button>
 </div></nav>
 
 <div class="modal" id="modal"><div class="modalbox">
@@ -180,6 +187,19 @@ label{font-size:11px;font-weight:700}input{width:100%;margin-top:4px;border:1px 
 <div class="modal-actions"><button class="save" onclick="save()">Uložit</button><button onclick="closeModal()">Zrušit</button></div>
 </div></div>
 
+
+<div class="stats-modal" id="vehicleModal">
+ <div class="stats-box">
+  <button class="stats-close" onclick="closeVehicleModal()">Zavřít</button>
+  <h2>Vozidlo</h2>
+  <div class="stats-grid">
+   <div class="stats-card"><div class="sl">Vozidlo</div><div class="sv" style="font-size:24px">Hyundai i30</div><div class="su">Kombi</div></div>
+   <div class="stats-card"><div class="sl">Palivo</div><div class="sv" style="font-size:24px">Benzín</div><div class="su">Natural 95</div></div>
+   <div class="stats-card"><div class="sl">Nádrž</div><div class="sv">50</div><div class="su">l</div></div>
+   <div class="stats-card"><div class="sl">Aktuální tachometr</div><div class="sv" id="vehicleOdo">—</div><div class="su">km</div></div>
+  </div>
+ </div>
+</div>
 
 <div class="stats-modal" id="statsModal">
  <div class="stats-box">
@@ -551,6 +571,43 @@ function openHistory(){
 }
 function closeHistory(){document.getElementById('historyModal').style.display='none';}
 document.querySelector('.panel.last .panel-select').onclick=openHistory;
+
+function setActiveNav(key){
+ document.querySelectorAll('.bottom [data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===key));
+}
+function openVehicleModal(){
+ const maxO=data.length?Math.max(...data.map(x=>Number(x.odometer)||0)):40372;
+ document.getElementById('vehicleOdo').textContent=maxO?maxO.toLocaleString('cs-CZ'):'—';
+ document.getElementById('vehicleModal').style.display='flex';
+}
+function closeVehicleModal(){document.getElementById('vehicleModal').style.display='none';}
+function goHome(){
+ closeHistory(); closeStats(); closeVehicleModal();
+ setActiveNav('home');
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function goRefuels(){
+ closeStats(); closeVehicleModal(); setActiveNav('refuels'); openHistory();
+}
+function goStats(){
+ closeHistory(); closeVehicleModal(); setActiveNav('stats'); openStats();
+}
+function goVehicles(){
+ closeHistory(); closeStats(); setActiveNav('vehicles'); openVehicleModal();
+}
+document.querySelectorAll('.bottom [data-nav]').forEach(btn=>{
+ btn.addEventListener('click',()=>{
+   const k=btn.dataset.nav;
+   if(k==='home')goHome();
+   else if(k==='refuels')goRefuels();
+   else if(k==='stats')goStats();
+   else if(k==='vehicles')goVehicles();
+ });
+});
+
+if('serviceWorker' in navigator){
+ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
 render();
 </script>
 </body>
