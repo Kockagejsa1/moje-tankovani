@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#1769d1">
+<title>MOJE TANKOVÁNÍ</title>
+<!-- Vozidlo: Hyundai i30 Kombi podle uživatelem dodaného vzoru. -->
+<style>
+*{box-sizing:border-box}
+:root{
+ --blue:#1769d1;--blueDark:#0f56b7;--bg:#f3f6fa;--text:#17212f;
+ --muted:#718096;--line:#e5eaf0;--green:#20a56b;
+}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+.app{max-width:1100px;margin:auto;min-height:100vh;padding-bottom:78px}
+.header{height:62px;background:var(--blue);color:white;display:flex;align-items:center;padding:0 18px;box-shadow:0 2px 8px #0002}
+.header .fuel{font-size:29px;margin-right:9px}
+.header h1{font-size:23px;margin:0;font-weight:800;letter-spacing:.2px}
+.header .gear{margin-left:auto;width:38px;height:38px;border-radius:11px;border:0;background:#ffffff22;color:#fff;font-size:21px}
+.content{padding:12px 14px}
+.vehicle{background:#fff;border-radius:13px;border:1px solid #e6ebf1;display:flex;align-items:center;padding:10px 13px;min-height:76px;box-shadow:0 2px 7px #213b5d12}
+.carbox{width:118px;height:62px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none}
+.carbox img{max-width:110px;max-height:60px;object-fit:contain}
+.car-emoji{display:none}
+.car-photo{width:116px;height:68px;object-fit:cover;object-position:center;border-radius:8px}
+.vehicle-info{flex:1;min-width:0}
+.vehicle-title{font-size:16px;font-weight:800;margin-bottom:7px}
+.vehicle-line{font-size:12px;color:#667383;display:flex;gap:13px;flex-wrap:wrap}
+.vehicle-arrow{font-size:24px;color:#8b98a6;padding-left:5px}.vehicle-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.vehicle-summary>div{min-width:0}.vehicle-summary small{display:block;font-size:10px;color:#718096;margin-bottom:2px}.vehicle-summary b{font-size:17px;color:#1769d1;font-weight:800}.vehicle-summary em{font-size:9px;color:#7a8795;font-style:normal;margin-left:3px}.vehicle-summary{white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:9px}
+.stat{background:#fff;border:1px solid #e7ebf0;border-radius:9px;text-align:center;padding:10px 5px;min-height:72px;box-shadow:0 2px 6px #213b5d0c}
+.stat-icon{font-size:17px}
+.stat-label{font-size:10px;color:#718096;margin:4px 0}
+.stat-value{font-size:17px;font-weight:800;color:#1769d1}
+.stat-unit{font-size:9px;color:#7a8795}
+.panel{background:#fff;border:1px solid #e7ebf0;border-radius:11px;margin-top:9px;padding:9px 11px;box-shadow:0 2px 6px #213b5d0c}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.panel-title{font-size:13px;font-weight:800}
+.panel-select{font-size:9px;color:#718096;border:1px solid #dce3ea;border-radius:7px;padding:4px 6px}
+.chart{height:105px;position:relative;border-bottom:1px solid #dbe2e9;border-left:1px solid #dbe2e9;overflow:hidden;background:linear-gradient(to bottom,transparent 24%,#edf2f7 25%,transparent 26%,transparent 49%,#edf2f7 50%,transparent 51%,transparent 74%,#edf2f7 75%,transparent 76%)}
+.chart svg{position:absolute;inset:0;width:100%;height:100%}
+.chart-label{font-size:8px;color:#8793a0}
+.last{margin-top:9px}
+.refuel{display:grid;grid-template-columns:68px 1fr 65px 70px 18px;align-items:center;gap:5px;padding:8px 2px;border-bottom:1px solid #edf0f3;font-size:10px}
+.refuel:last-child{border-bottom:0}
+.refuel-date{font-weight:700}.refuel-station{font-weight:700}.refuel-sub{display:block;color:#8793a0;font-size:8px;margin-top:2px}.refuel-price{text-align:right;font-weight:800}.refuel-arrow{color:#8d99a6;text-align:right}
+.actions{display:grid;grid-template-columns:1.2fr 1fr;gap:7px;margin-top:9px}
+.action{border-radius:8px;padding:10px 7px;font-size:12px;font-weight:800;border:1px solid var(--blue);background:#fff;color:var(--blue)}
+.action.primary{background:var(--blue);color:#fff}
+.bottom{position:fixed;bottom:0;left:0;right:0;height:66px;background:#fff;border-top:1px solid #dfe5eb;box-shadow:0 -2px 10px #213b5d15;z-index:20}
+.nav{height:100%;max-width:1100px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.nav button{border:0;background:#fff;color:#788492;font-size:9px}.nav button.active{color:var(--blue);font-weight:700}
+.nav-icon{font-size:21px;display:block;line-height:24px;margin-bottom:2px}
+.modal{display:none;position:fixed;inset:0;background:#10243b88;z-index:50;align-items:center;justify-content:center;padding:14px}
+.modalbox{background:#fff;width:min(500px,100%);border-radius:15px;padding:17px;max-height:92vh;overflow:auto}
+.modalbox h2{margin:0 0 12px;font-size:18px}.form{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+label{font-size:11px;font-weight:700}input{width:100%;margin-top:4px;border:1px solid #cfd8e2;border-radius:8px;padding:9px;font-size:14px}.wide{grid-column:1/-1}
+.modal-actions{display:flex;gap:7px;margin-top:13px}.modal-actions button{flex:1;border-radius:8px;padding:10px;border:1px solid var(--blue);font-weight:700}.save{background:var(--blue);color:#fff}
+@media(min-width:700px){
+ .app{max-width:760px;background:var(--bg)}
+ .content{padding:14px 18px}
+}
+@media(max-width:430px){
+ .carbox{width:95px}.carbox img{max-width:90px}.vehicle-title{font-size:15px}
+ .stats{gap:6px}.stat{padding:8px 3px}.stat-value{font-size:15px}
+ .refuel{grid-template-columns:58px 1fr 54px 60px 12px}
+}
+
+.photo-tools{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 10px}.photo-tools button{border:1px solid #1769d1;background:#f7fbff;color:#1769d1;border-radius:8px;padding:10px 6px;font-size:12px;font-weight:800}.ocr-status{font-size:11px;color:#687789;margin:5px 0 10px;min-height:16px}.history-modal{display:none;position:fixed;inset:0;background:#10243b88;z-index:60;align-items:center;justify-content:center;padding:14px}.history-box{background:#fff;width:min(600px,100%);border-radius:15px;padding:17px;max-height:92vh;overflow:auto}.history-item{display:grid;grid-template-columns:75px 1fr auto;gap:8px;padding:9px 0;border-bottom:1px solid #e5eaf0;font-size:11px}.history-item b{font-size:12px}.history-item small{color:#788492}.history-close{float:right;border:0;background:#eef3f8;border-radius:8px;padding:7px 10px}
+
+/* --- readability: recent refueling --- */
+.refuel{
+  display:grid;
+  grid-template-columns:82px minmax(0,1fr) 52px 74px 12px;
+  align-items:center;gap:7px;padding:10px 2px;border-bottom:1px solid #edf0f3;
+  font-size:11px;min-height:62px
+}
+.refuel-date{font-weight:800;font-size:11px;line-height:1.25;white-space:normal}
+.refuel-date .day{font-size:15px;display:block}
+.refuel-date .date-rest{display:block;color:#526172;font-size:10px}
+.refuel-date .time{display:block;color:#7b8794;font-size:9px;margin-top:2px}
+.refuel-station{font-weight:800;font-size:12px;display:block;line-height:1.15}
+.refuel-sub{display:block;color:#718096;font-size:10px;margin-top:4px;line-height:1.2}
+.refuel-liters{font-weight:700;text-align:right;font-size:11px;white-space:nowrap}
+.refuel-price{text-align:right;font-weight:800;font-size:12px;white-space:nowrap}
+.refuel-arrow{color:#8d99a6;text-align:right}
+.stats-modal{display:none;position:fixed;inset:0;background:#10243b88;z-index:65;align-items:center;justify-content:center;padding:14px}
+.stats-box{background:#fff;width:min(560px,100%);border-radius:15px;padding:17px;max-height:92vh;overflow:auto}
+.stats-box h2{margin:0 0 13px;font-size:19px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stats-card{border:1px solid #e5eaf0;border-radius:10px;padding:11px;background:#f9fbfd}
+.stats-card .sl{font-size:10px;color:#718096;margin-bottom:5px}
+.stats-card .sv{font-size:18px;font-weight:800;color:#1769d1}
+.stats-card .su{font-size:9px;color:#7b8794}
+.stats-section{margin-top:14px;border-top:1px solid #e5eaf0;padding-top:12px}
+.stats-section-title{font-size:13px;font-weight:800;margin-bottom:8px}
+.stats-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #edf0f3;font-size:11px}
+.stats-row b{font-size:11px}
+.stats-close{float:right;border:0;background:#eef3f8;border-radius:8px;padding:7px 10px}
+@media(max-width:430px){
+ .refuel{grid-template-columns:68px minmax(0,1fr) 46px 66px 10px;gap:5px}
+ .refuel-date .day{font-size:14px}.refuel-station{font-size:11px}.refuel-sub{font-size:9px}.refuel-price{font-size:11px}
+}
+
+
+/* v2 UX */
+.vehicle{cursor:pointer;transition:transform .12s,box-shadow .12s}.vehicle:active{transform:scale(.99)}
+.chart-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.chart-controls select{font-size:11px;border:1px solid #d7e0e8;border-radius:7px;padding:5px 7px;background:#fff;color:#526172}.custom-period{display:flex;align-items:center;gap:4px}.custom-period input{width:125px;margin:0;padding:5px;font-size:11px}.chart-labels{display:flex;justify-content:space-between;margin-top:4px;gap:3px}.chart-labels span{font-size:8px;color:#8793a0;flex:1;text-align:center}.chart-empty{height:100%;display:flex;align-items:center;justify-content:center;color:#8793a0;font-size:11px}.chart-svg{position:absolute;inset:0;width:100%;height:100%}
+.refuel{grid-template-columns:92px minmax(0,1fr) 58px 84px 12px;min-height:78px;padding:13px 3px;gap:8px}.refuel-date .day{font-size:19px}.refuel-date .date-rest{font-size:12px}.refuel-date .time{font-size:11px}.refuel-station{font-size:15px}.refuel-sub{font-size:12px;margin-top:5px}.refuel-liters{font-size:13px}.refuel-price{font-size:14px}.nav button{font-size:10px}.nav-icon{font-size:23px}
+.vehicle-modal .vehicle-big{font-size:20px;font-weight:800;margin:4px 0 14px}.vehicle-detail{display:grid;grid-template-columns:1fr 1fr;gap:8px}.vehicle-detail div{padding:12px;border:1px solid #e5eaf0;border-radius:10px;background:#f9fbfd}.vehicle-detail small{display:block;color:#718096;font-size:10px;margin-bottom:4px}.vehicle-detail b{font-size:16px;color:#1769d1}
+@media(max-width:430px){.refuel{grid-template-columns:78px minmax(0,1fr) 50px 74px 10px}.refuel-date .day{font-size:17px}.refuel-station{font-size:13px}.refuel-sub{font-size:11px}.refuel-price{font-size:13px}.custom-period input{width:105px}}
+
+/* FINAL MOBILE READABILITY + FUNCTIONAL NAV */
+body{font-size:16px}
+.content{padding:14px 10px}
+.header{height:66px;padding:0 14px}.header h1{font-size:23px}.header .fuel{font-size:30px}
+.vehicle{min-height:96px;padding:12px 13px;border-radius:14px}.vehicle-title{font-size:19px}.vehicle-line{font-size:14px;gap:10px}.vehicle-arrow{font-size:28px}
+.stats{gap:7px;margin-top:10px}.stat{min-height:88px;padding:10px 4px}.stat-icon{font-size:19px}.stat-label{font-size:11px;line-height:1.2}.stat-value{font-size:20px}.stat-unit{font-size:10px}
+.panel{margin-top:11px;padding:12px 12px;border-radius:13px}.panel-title{font-size:17px}.panel-select{font-size:12px;padding:6px 8px}.chart-controls select{font-size:13px;padding:7px 9px}.chart{height:125px}.chart-labels span{font-size:9px}
+.last .panel-head{margin-bottom:7px}
+.refuel{grid-template-columns:70px minmax(0,1fr) 58px 72px 10px;gap:6px;min-height:94px;padding:14px 2px;font-size:14px}
+.refuel-date .day{font-size:21px}.refuel-date .date-rest{font-size:13px}.refuel-date .time{font-size:11px}.refuel-station{font-size:16px}.refuel-sub{font-size:12px;margin-top:5px;line-height:1.35}.refuel-liters{font-size:14px}.refuel-price{font-size:15px}.refuel-cons{display:block;margin-top:4px;font-size:13px;font-weight:800;color:#1769d1}
+.actions{gap:8px;margin-top:11px}.action{font-size:14px;padding:12px 7px}
+.bottom{height:74px}.nav button{font-size:12px;font-weight:600}.nav-icon{font-size:27px;line-height:29px}
+.modalbox,.stats-box,.history-box{padding:20px;border-radius:16px}.modalbox h2,.stats-box h2,.history-box h2{font-size:22px}.form{gap:12px}label{font-size:14px}input{padding:11px;font-size:16px}.photo-tools button{font-size:14px;padding:12px 7px}.ocr-status{font-size:13px}.modal-actions button{font-size:14px;padding:12px}
+.vehicle-modal .vehicle-big{font-size:22px}.vehicle-detail small{font-size:12px}.vehicle-detail b{font-size:18px}.vehicle-detail div{padding:14px}
+.stats-card .sl{font-size:12px}.stats-card .sv{font-size:20px}.stats-card .su{font-size:11px}.stats-section-title{font-size:15px}.stats-row{font-size:13px;padding:8px 0}.stats-row b{font-size:13px}
+.history-item{font-size:13px;padding:12px 0}.history-item b{font-size:15px}.history-item small{font-size:12px}
+@media(max-width:430px){.refuel{grid-template-columns:64px minmax(0,1fr) 52px 68px 8px;gap:5px}.refuel-station{font-size:15px}.refuel-sub{font-size:11px}.refuel-cons{font-size:12px}.refuel-price{font-size:14px}.refuel-liters{font-size:13px}.stat-label{font-size:10px}.stat-value{font-size:18px}.vehicle-title{font-size:18px}}
+
+.settings-section{margin-top:15px;border-top:1px solid #e5eaf0;padding-top:13px}.settings-title{font-size:16px;font-weight:800;margin-bottom:9px}.vehicle-list{display:grid;gap:8px}.vehicle-setting{border:1px solid #dfe6ed;border-radius:11px;padding:11px;background:#f9fbfd;display:flex;align-items:center;gap:8px}.vehicle-setting.active{border:2px solid var(--blue)}.vehicle-setting-main{flex:1;min-width:0}.vehicle-setting-name{font-size:16px;font-weight:800}.vehicle-setting-meta{font-size:12px;color:#718096;margin-top:3px}.vehicle-setting button{border:1px solid #cfd8e2;background:#fff;border-radius:8px;padding:7px 9px;font-size:12px}.settings-add{width:100%;margin-top:9px;border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:11px;font-weight:800;font-size:14px}.setting-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:14px}.setting-row select{font-size:14px;padding:7px;border:1px solid #cfd8e2;border-radius:8px}.setting-row input[type=checkbox]{width:22px;height:22px}.settings-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.settings-actions button{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:11px;font-weight:800;font-size:14px}
+body.dark{--bg:#111827;--text:#f3f4f6;--muted:#aab4c0;--line:#374151}body.dark .vehicle,body.dark .stat,body.dark .panel,body.dark .modalbox,body.dark .history-box,body.dark .stats-box,body.dark .vehicle-setting{background:#1f2937;color:#f3f4f6;border-color:#374151}body.dark .bottom,body.dark .nav button{background:#1f2937;color:#c5ced8}body.dark input,body.dark select,body.dark .setting-row select{background:#111827;color:#fff;border-color:#4b5563}
+body.font-large{font-size:18px}body.font-large .vehicle-title{font-size:21px}body.font-large .vehicle-line{font-size:16px}body.font-large .panel-title{font-size:19px}body.font-large .refuel-station{font-size:17px}body.font-large .refuel-sub{font-size:13px}body.font-large .refuel-cons{font-size:14px}body.font-large .refuel-liters{font-size:15px}body.font-large .refuel-price{font-size:16px}
+body.font-xl{font-size:20px}body.font-xl .vehicle-title{font-size:23px}body.font-xl .vehicle-line{font-size:18px}body.font-xl .panel-title{font-size:21px}body.font-xl .refuel-station{font-size:19px}body.font-xl .refuel-sub{font-size:15px}body.font-xl .refuel-cons{font-size:16px}body.font-xl .refuel-liters{font-size:17px}body.font-xl .refuel-price{font-size:18px}
+</style>
+
+<style id="moje-tankovani-layout-fix">
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+body {
+  margin: 0;
+  box-sizing: border-box;
+}
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+.header, header, .topbar {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow: hidden;
+}
+main, .main, .content, .container, .page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+.bottom-nav, .bottomNav, nav.bottom-nav {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  transform: none !important;
+  display: flex !important;
+  overflow: hidden !important;
+  padding-left: max(6px, env(safe-area-inset-left)) !important;
+  padding-right: max(6px, env(safe-area-inset-right)) !important;
+}
+.bottom-nav > *, .bottomNav > *, nav.bottom-nav > * {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+body {
+  padding-bottom: 78px !important;
+}
+</style>
+
+
+<style id="moje-tankovani-header-cleanup">
+.header + .stats,
+.header + .summary,
+.header + .top-stats,
+.header + .vehicle-summary,
+header + .stats,
+header + .summary,
+header + .top-stats,
+header + .vehicle-summary {
+  display: none !important;
+}
+</style>
+
+
+<style id="moje-tankovani-home-card-v3">
+/* Home: large vehicle tile, text left, car photo right */
+section.vehicle {
+  width: 100% !important;
+  min-height: 210px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 42%) !important;
+  grid-template-areas: "info photo" !important;
+  align-items: stretch !important;
+  position: relative !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border-radius: 18px !important;
+}
+section.vehicle .vehicle-info {
+  grid-area: info !important;
+  order: 1 !important;
+  padding: 22px 18px 22px 20px !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+}
+section.vehicle .carbox {
+  grid-area: photo !important;
+  order: 2 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 210px !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+}
+section.vehicle .car-photo {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
+}
+section.vehicle .vehicle-title {
+  text-align: left !important;
+  width: 100% !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  margin-bottom: 10px !important;
+}
+section.vehicle .vehicle-line {
+  justify-content: flex-start !important;
+  width: 100% !important;
+  text-align: left !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+}
+section.vehicle .vehicle-summary {
+  width: 100% !important;
+  margin-top: 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  text-align: left !important;
+}
+section.vehicle .vehicle-summary > div {
+  text-align: left !important;
+}
+section.vehicle .vehicle-arrow {
+  position: absolute !important;
+  right: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 3 !important;
+  background: #ffffffdd !important;
+  border-radius: 50% !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+@media (max-width: 430px) {
+  section.vehicle {
+    min-height: 190px !important;
+    grid-template-columns: minmax(0, 1fr) 44% !important;
+  }
+  section.vehicle .carbox {
+    min-height: 190px !important;
+  }
+  section.vehicle .vehicle-info {
+    padding: 17px 10px 17px 15px !important;
+  }
+  section.vehicle .vehicle-title {
+    font-size: 19px !important;
+  }
+  section.vehicle .vehicle-line {
+    gap: 6px !important;
+    font-size: 12px !important;
+  }
+  section.vehicle .vehicle-summary {
+    margin-top: 12px !important;
+    gap: 7px !important;
+  }
+}
+</style>
+
+
+<style id="mt-home-clean-v4">
+/* Home: remove the four quick-stat tiles */
+.home .stats-grid,.home .home-stats,.home .quick-stats,.home .summary-grid,
+.home .stat-cards,.stats-grid,.home-stats,.quick-stats{display:none!important}
+
+/* Smaller vehicle tile */
+.vehicle-card{min-height:225px!important;height:auto!important;padding:18px 22px!important;overflow:hidden!important;display:flex!important;align-items:center!important}
+.vehicle-card .vehicle-info,.vehicle-card .info,.vehicle-card .vehicle-details{
+  flex:1 1 60%!important;min-width:0!important;text-align:left!important
+}
+/* Whole car visible on the right */
+.vehicle-card img,.vehicle-card .vehicle-image,.vehicle-card .car-image{
+  flex:0 0 34%!important;width:34%!important;max-width:175px!important;height:125px!important;
+  object-fit:contain!important;object-position:center!important;margin-left:8px!important;align-self:center!important
+}
+/* Remove average consumption and total fuel from vehicle card */
+.vehicle-card .vehicle-metrics,.vehicle-card .metrics,.vehicle-card .vehicle-summary{display:none!important}
+
+/* Remove Home statistics button; bottom navigation remains */
+.home .stats-button,.home .btn-stats,.home button[data-action="stats"],
+.home a[data-action="stats"],.home .statistics-button,.home .open-stats{display:none!important}
+
+@media(max-width:600px){
+  .vehicle-card{min-height:210px!important;padding:16px 18px!important}
+  .vehicle-card img,.vehicle-card .vehicle-image,.vehicle-card .car-image{
+    width:34%!important;max-width:155px!important;height:115px!important;margin-left:5px!important
+  }
+}
+</style>
+
+
+<style id="mt-professional-home-fix">
+/* ===== HOME – karta vozu ===== */
+.vehicle-card{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 38%!important;
+  align-items:center!important;
+  min-height:205px!important;
+  height:205px!important;
+  padding:20px 20px 20px 24px!important;
+  overflow:hidden!important;
+}
+.vehicle-card .vehicle-info,
+.vehicle-card .info,
+.vehicle-card .vehicle-details{
+  min-width:0!important;
+  width:100%!important;
+  text-align:left!important;
+}
+.vehicle-card img,
+.vehicle-card .vehicle-image,
+.vehicle-card .car-image{
+  width:100%!important;
+  max-width:170px!important;
+  height:120px!important;
+  justify-self:end!important;
+  align-self:center!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  margin:0!important;
+}
+.vehicle-card .vehicle-metrics,
+.vehicle-card .metrics,
+.vehicle-card .vehicle-summary,
+.vehicle-card .avg-consumption,
+.vehicle-card .total-fuel{
+  display:none!important;
+}
+
+/* ===== HOME – odstranění rychlých statistik ===== */
+#home .stats-grid,
+#home .home-stats,
+#home .quick-stats,
+#home .summary-grid,
+#home .stat-cards,
+.home .stats-grid,
+.home .home-stats,
+.home .quick-stats,
+.home .summary-grid,
+.home .stat-cards{
+  display:none!important;
+}
+
+/* Pokud aplikace používá kartu bez třídy, schováme celý grid obsahující
+   přesně tyto čtyři titulky. */
+#home [class*="stat"],
+#home [class*="metric"]{
+  /* nepřepisujeme obecné prvky; JS níže odstraní konkrétní blok */
+}
+
+/* Statistiky – tlačítko na Home pryč, spodní navigace ne */
+#home .stats-button,
+#home .btn-stats,
+#home .statistics-button,
+#home .open-stats,
+#home [data-action="stats"],
+#home [onclick*="openStats"],
+#home [onclick*="navStats"]{
+  display:none!important;
+}
+
+@media(max-width:600px){
+  .vehicle-card{
+    grid-template-columns:minmax(0,1fr) 36%!important;
+    min-height:195px!important;
+    height:195px!important;
+    padding:16px 16px 16px 20px!important;
+  }
+  .vehicle-card img,
+  .vehicle-card .vehicle-image,
+  .vehicle-card .car-image{
+    max-width:145px!important;
+    height:105px!important;
+  }
+}
+</style>
+
+
+<style id="mt-vehicle-card-v5">
+.vehicle-card{
+  display:block!important;
+  min-height:145px!important;
+  height:145px!important;
+  padding:16px 20px!important;
+  overflow:hidden!important;
+}
+.vehicle-card img,
+.vehicle-card .vehicle-image,
+.vehicle-card .car-image,
+.vehicle-card picture{
+  display:none!important;
+}
+.vehicle-card .vehicle-info,
+.vehicle-card .info,
+.vehicle-card .vehicle-details{
+  width:100%!important;
+  max-width:100%!important;
+  text-align:left!important;
+}
+@media(max-width:600px){
+  .vehicle-card{min-height:145px!important;height:145px!important;padding:14px 18px!important}
+}
+</style>
+
+
+<style id="mt-vehicle-tile-compact-v6">
+/* Horní dlaždice vozidla: kompaktní, bez fotky, vystředěná */
+section.vehicle{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;grid-template-columns:none!important;min-height:0!important;height:auto!important;padding:14px 40px!important;border-radius:16px!important;text-align:center!important}
+section.vehicle .vehicle-info{display:flex!important;flex-direction:column!important;align-items:center!important;width:100%!important;padding:0!important;text-align:center!important}
+section.vehicle .vehicle-title{width:100%!important;text-align:center!important;font-size:20px!important;margin:0 0 6px!important}
+section.vehicle .vehicle-line{width:100%!important;justify-content:center!important;text-align:center!important;gap:14px!important;font-size:13px!important}
+section.vehicle .vehicle-summary{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;width:100%!important;margin-top:10px!important;padding-top:10px!important;border-top:1px solid var(--line)!important;text-align:center!important}
+section.vehicle .vehicle-summary>div{text-align:center!important}
+section.vehicle .vehicle-arrow{right:10px!important;width:26px!important;height:26px!important;background:transparent!important;font-size:24px!important;color:#8b98a6!important}
+body.font-large section.vehicle .vehicle-title{font-size:22px!important}
+body.font-large section.vehicle .vehicle-line{font-size:15px!important}
+body.font-xl section.vehicle .vehicle-title{font-size:25px!important}
+body.font-xl section.vehicle .vehicle-line{font-size:17px!important}
+@media(max-width:430px){
+ section.vehicle{padding:12px 34px!important;min-height:0!important;grid-template-columns:none!important}
+ section.vehicle .vehicle-title{font-size:18px!important}
+ section.vehicle .vehicle-line{gap:10px!important;font-size:12px!important}
+ section.vehicle .vehicle-summary{margin-top:8px!important;padding-top:8px!important}
+}
+</style>
+<style id="mt-actions-single-v7">.actions{grid-template-columns:1fr!important}</style>
+<style id="mt-input-white-v8">
+/* Zadávací pole: vždy bílé s černým písmem (i při tmavém režimu telefonu / aplikace) */
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),
+select,textarea,
+body.dark input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),
+body.dark select,body.dark textarea,body.dark .setting-row select{
+ background:#fff!important;background-color:#fff!important;
+ color:#000!important;-webkit-text-fill-color:#000!important;
+ color-scheme:light!important;
+ border:1px solid #8fa0b3!important;
+}
+input::placeholder,textarea::placeholder{color:#6b7787!important;-webkit-text-fill-color:#6b7787!important;opacity:1}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--blue)!important;outline-offset:0}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="header">
+ <h1>MOJE TANKOVÁNÍ</h1><button class="gear" onclick="openSettings()" aria-label="Nastavení">⚙</button>
+</header>
+
+<main class="content">
+<section class="vehicle" onclick="openVehicle()" role="button" tabindex="0" aria-label="Vozidlo Hyundai i30">
+ <div class="vehicle-info">
+  <div class="vehicle-title">Hyundai i30 Kombi</div>
+  <div class="vehicle-line"><span>Benzín</span><span>50 l</span><span>40 372 km</span></div>
+  <div class="vehicle-summary">
+   <div><small>Průměrná spotřeba</small><b id="vehicleAvg">—</b><em>l/100 km</em></div>
+   <div><small>Celkem natankováno</small><b id="vehicleLiters">—</b><em>l</em></div>
+  </div>
+ </div>
+ <div class="vehicle-arrow">›</div>
+</section>
+
+<section class="stats" hidden style="display:none!important" aria-hidden="true">
+ <div class="stat"><div class="stat-icon">⛽</div><div class="stat-label">Průměrná spotřeba</div><div class="stat-value" id="avg">—</div><div class="stat-unit">l/100 km</div></div>
+ <div class="stat"><div class="stat-icon">💳</div><div class="stat-label">Průměrná cena</div><div class="stat-value" id="priceAvg">—</div><div class="stat-unit">Kč/l</div></div>
+ <div class="stat"><div class="stat-icon">⌁</div><div class="stat-label">Celkem ujeto</div><div class="stat-value" id="distance">0</div><div class="stat-unit">km</div></div>
+ <div class="stat"><div class="stat-icon">⛽</div><div class="stat-label">Celkem natankováno</div><div class="stat-value" id="liters">0</div><div class="stat-unit">litrů</div></div>
+</section>
+
+<section class="panel">
+ <div class="panel-head"><div class="panel-title">Vývoj spotřeby</div><div class="chart-controls"><select id="chartPeriod" onchange="changeChartPeriod()"><option value="3">3 měsíce</option><option value="6">6 měsíců</option><option value="12" selected>12 měsíců</option><option value="all">Všechna data</option><option value="custom">Vlastní období</option></select><div id="customPeriod" class="custom-period" style="display:none"><input type="date" id="chartFrom" onchange="renderChart()"><span>–</span><input type="date" id="chartTo" onchange="renderChart()"></div></div></div>
+ <div class="chart" id="consumptionChart"><div class="chart-empty">Zatím není dost údajů pro graf.</div></div>
+ <div id="chartLabels" class="chart-labels"></div>
+</section>
+
+<section class="panel last">
+ <div class="panel-head"><div class="panel-title">Poslední tankování</div><div class="panel-select">Vše ›</div></div>
+ <div id="history"><div style="padding:12px;color:#8793a0;font-size:11px">Zatím žádné tankování.</div></div>
+</section>
+
+<div class="actions">
+ <button class="action primary" onclick="openModal()">⛽ &nbsp;PŘIDAT TANKOVÁNÍ</button>
+</div>
+</main>
+</div>
+
+<nav class="bottom"><div class="nav">
+ <button class="active" onclick="navHome(this)"><span class="nav-icon">⌂</span>Domů</button>
+ <button onclick="navHistory(this)"><span class="nav-icon">⛽</span>Tankování</button>
+ <button onclick="navStats(this)"><span class="nav-icon">▥</span>Statistiky</button>
+ <button onclick="navVehicle(this)"><span class="nav-icon">▱</span>Vozidla</button>
+</div></nav>
+
+<div class="modal vehicle-modal" id="vehicleModal"><div class="modalbox"><button class="history-close" onclick="closeVehicle()">✕</button><h2>Vozidlo</h2><div class="vehicle-big">Hyundai i30 Kombi</div><div class="vehicle-detail"><div><small>Palivo</small><b id="vehicleFuel">—</b></div><div><small>Nádrž</small><b id="vehicleTank">—</b></div><div><small>Aktuální tachometr</small><b id="vehicleOdo">—</b></div><div><small>Počet tankování</small><b id="vehicleCount">0</b></div></div><div class="modal-actions"><button class="save" onclick="closeVehicle();openSettings();openVehicleEditor()">＋ Přidat vůz</button><button onclick="closeVehicle()">Zavřít</button></div></div></div>
+<div class="modal" id="modal"><div class="modalbox">
+<h2>Nové tankování</h2>
+<div class="photo-tools">
+<button type="button" onclick="document.getElementById('cameraInput').click()">📷 Vyfotit účtenku</button>
+<button type="button" onclick="pickGallery()">🖼️ Načíst účtenku z galerie</button>
+</div>
+<div class="ocr-status" id="ocrStatus">Vyfoť nebo načti účtenku. OCR předvyplní údaje; stav tachometru zadej ručně. Fotka se neukládá.</div>
+<input type="file" id="galleryInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files);this.value=''">
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFiles(this.files);this.value=''">
+<input type="file" id="bothInput" accept="image/*" multiple capture="environment" style="display:none">
+<div class="form">
+<label>Datum<input type="date" id="date"></label>
+<label>Stav tachometru<input type="number" id="odo"></label>
+<label>Litry<input type="number" step=".01" id="l"></label>
+<label>Cena za litr<input type="number" step=".01" id="p"></label>
+<label class="wide">Celkem Kč<input type="number" step=".01" id="total"></label>
+<label class="wide">Čerpací stanice<input id="station" placeholder="Např. MOL"></label>
+<label class="wide"><input type="checkbox" id="full" style="width:auto"> Plná nádrž</label>
+</div>
+<div class="modal-actions"><button class="save" onclick="save()">Uložit</button><button onclick="closeModal()">Zrušit</button></div>
+</div></div>
+
+
+
+<div class="modal" id="settingsModal">
+ <div class="modalbox settings-box">
+  <button class="history-close" onclick="closeSettings()">✕</button>
+  <h2>Nastavení</h2>
+  <div class="settings-section">
+   <div class="settings-title">Vozidla</div>
+   <div id="vehicleList" class="vehicle-list"></div>
+   <button class="settings-add" onclick="openVehicleEditor()">＋ Přidat vozidlo</button>
+  </div>
+  <div class="settings-section">
+   <div class="settings-title">Nastavení aplikace</div>
+   <label class="setting-row"><span>Velikost písma</span><select id="fontScale" onchange="setFontScale(this.value)"><option value="1">Normální</option><option value="1.12">Větší</option><option value="1.25">Velké</option><option value="1.4">Velmi velké</option></select></label>
+   <label class="setting-row"><span>Tmavý režim</span><input id="darkMode" type="checkbox" onchange="setDarkMode(this.checked)"></label>
+  </div>
+  <div class="settings-section">
+   <div class="settings-title">Data</div>
+   <div class="settings-actions"><button onclick="exportBackup()">Export JSON</button><button onclick="document.getElementById('importBackupInput').click()">Import JSON</button></div>
+   <input id="importBackupInput" type="file" accept="application/json,.json" style="display:none" onchange="importBackup(this.files[0])">
+   <div class="settings-actions" style="margin-top:8px"><button onclick="exportExcel()">Export Excel</button><button onclick="document.getElementById('importExcelInput').click()">Import Excel</button></div>
+   <input id="importExcelInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="importExcel(this.files[0]);this.value=''">
+  </div>
+ </div>
+</div>
+<div class="modal" id="vehicleEditorModal">
+ <div class="modalbox">
+  <button class="history-close" onclick="closeVehicleEditor()">✕</button>
+  <h2 id="vehicleEditorTitle">Přidat vozidlo</h2>
+  <div class="form">
+   <label class="wide">Název vozidla<input id="vName" placeholder="Např. Hyundai i30 Kombi"></label>
+   <label>Palivo<select id="vFuel"><option>Benzín</option><option>Nafta</option><option>LPG</option><option>CNG</option><option>Elektřina</option></select></label>
+   <label>Nádrž (l)<input id="vTank" type="number" step="0.1" min="0"></label>
+   <label class="wide">Registrační značka<input id="vPlate" placeholder="Např. 1A2 3456"></label>
+   <label class="wide">Aktuální tachometr (km)<input id="vOdo" type="number" min="0"></label>
+  </div>
+  <div class="modal-actions"><button class="save" onclick="saveVehicle()">Uložit</button><button onclick="closeVehicleEditor()">Zrušit</button></div>
+ </div>
+</div>
+<div class="stats-modal" id="statsModal">
+ <div class="stats-box">
+  <button class="stats-close" onclick="closeStats()">Zavřít</button>
+  <h2>Statistiky</h2>
+  <div class="stats-grid">
+   <div class="stats-card"><div class="sl">Průměrná spotřeba – poslední interval</div><div class="sv" id="stLastAvg">—</div><div class="su">l/100 km</div></div>
+   <div class="stats-card"><div class="sl">Dlouhodobá spotřeba</div><div class="sv" id="stLongAvg">—</div><div class="su">l/100 km</div></div>
+   <div class="stats-card"><div class="sl">Celkem ujeto</div><div class="sv" id="stDistance">—</div><div class="su">km</div></div>
+   <div class="stats-card"><div class="sl">Celkem natankováno</div><div class="sv" id="stLiters">—</div><div class="su">l</div></div>
+   <div class="stats-card"><div class="sl">Celkem zaplaceno</div><div class="sv" id="stCost">—</div><div class="su">Kč</div></div>
+   <div class="stats-card"><div class="sl">Průměrná cena paliva</div><div class="sv" id="stPrice">—</div><div class="su">Kč/l</div></div>
+  </div>
+  <div class="stats-section">
+   <div class="stats-section-title">Poslední uzavřený interval plných nádrží</div>
+   <div class="stats-row"><span>Vzdálenost</span><b id="stIntervalKm">—</b></div>
+   <div class="stats-row"><span>Spotřebované palivo</span><b id="stIntervalLiters">—</b></div>
+   <div class="stats-row"><span>Spotřeba</span><b id="stIntervalAvg">—</b></div>
+  </div>
+  <div class="stats-section">
+   <div class="stats-section-title">Další údaje</div>
+   <div class="stats-row"><span>Počet tankování</span><b id="stCount">—</b></div>
+   <div class="stats-row"><span>Počet uzavřených intervalů</span><b id="stIntervals">—</b></div>
+   <div class="stats-row"><span>Náklady na 1 km</span><b id="stCostKm">—</b></div>
+   <div class="stats-row"><span>Aktuální tachometr</span><b id="stOdo">—</b></div>
+  </div>
+ </div>
+</div>
+
+<div class="history-modal" id="historyModal"><div class="history-box"><button class="history-close" onclick="closeHistory()">Zavřít</button><h2>Historie tankování</h2><div id="allHistory"></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/lite.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const importedHistory=[{"date":"2023-06-09","odometer":27.0,"liters":42.229,"price":36.3,"total":1532.9,"station":"MAKRO","full":true,"drivvo":"0 L/100km"},{"date":"2023-06-25","odometer":544.0,"liters":36.189,"price":36.5,"total":1320.9,"station":"MAKRO","full":true,"drivvo":"7 L/100km"},{"date":"2023-07-16","odometer":1157.0,"liters":37.69,"price":36.1,"total":1360.6,"station":"MAKRO","full":true,"drivvo":"6,148 L/100km"},{"date":"2023-07-22","odometer":1388.0,"liters":20.07,"price":35.5,"total":712.5,"station":"Tank ONO","full":true,"drivvo":"8,688 L/100km"},{"date":"2023-07-28","odometer":1980.0,"liters":30.37,"price":45.538,"total":1383.0,"station":"Esso","full":true,"drivvo":"5,13 L/100km"},{"date":"2023-07-29","odometer":2524.0,"liters":30.019,"price":35.9,"total":1077.7,"station":"Tank ONO","full":true,"drivvo":"5,518 L/100km"},{"date":"2023-08-12","odometer":3147.0,"liters":38.951,"price":38.5,"total":1499.6,"station":"MAKRO","full":true,"drivvo":"6,252 L/100km"},{"date":"2023-09-17","odometer":3720.0,"liters":37.599,"price":39.9,"total":1500.2,"station":"MAKRO","full":true,"drivvo":"6,562 L/100km"},{"date":"2023-09-29","odometer":4276.0,"liters":36.16,"price":39.9,"total":1442.784,"station":"MAKRO","full":true,"drivvo":"6,504 L/100km"},{"date":"2023-10-20","odometer":4916.0,"liters":38.651,"price":37.5,"total":1449.4,"station":"MAKRO","full":true,"drivvo":"6,039 L/100km"},{"date":"2023-11-05","odometer":5444.0,"liters":33.401,"price":37.9,"total":1265.9,"station":"MAKRO","full":true,"drivvo":"6,326 L/100km"},{"date":"2023-11-26","odometer":5935.0,"liters":35.29,"price":35.5,"total":1252.8,"station":"MAKRO","full":true,"drivvo":"7,187 L/100km"},{"date":"2023-12-18","odometer":6355.0,"liters":28.4,"price":34.5,"total":979.8,"station":"MAKRO","full":true,"drivvo":"6,762 L/100km"},{"date":"2024-01-22","odometer":6863.0,"liters":37.581,"price":35.3,"total":1326.6,"station":"MAKRO","full":true,"drivvo":"7,398 L/100km"},{"date":"2024-02-25","odometer":7391.0,"liters":39.479,"price":36.5,"total":1441.0,"station":"MAKRO","full":true,"drivvo":"7,477 L/100km"},{"date":"2024-03-14","odometer":7747.0,"liters":24.321,"price":36.5,"total":887.7,"station":"MAKRO","full":true,"drivvo":"6,832 L/100km"},{"date":"2024-04-06","odometer":8381.0,"liters":41.54,"price":38.9,"total":1615.9,"station":"MAKRO","full":true,"drivvo":"6,552 L/100km"},{"date":"2024-04-27","odometer":8835.0,"liters":28.85,"price":38.7,"total":1116.5,"station":"MAKRO","full":true,"drivvo":"6,355 L/100km"},{"date":"2024-05-25","odometer":9423.0,"liters":39.349,"price":36.7,"total":1444.1,"station":"MAKRO","full":true,"drivvo":"6,692 L/100km"},{"date":"2024-06-12","odometer":9995.0,"liters":37.651,"price":36.7,"total":1381.8,"station":"MAKRO","full":true,"drivvo":"6,582 L/100km"},{"date":"2024-06-30","odometer":10571.0,"liters":37.17,"price":37.1,"total":1379.0,"station":"MAKRO","full":true,"drivvo":"6,453 L/100km"},{"date":"2024-07-13","odometer":11194.0,"liters":39.309,"price":36.9,"total":1450.5,"station":"MAKRO","full":true,"drivvo":"6,31 L/100km"},{"date":"2024-07-25","odometer":11602.0,"liters":27.849,"price":37.1,"total":1033.198,"station":"MAKRO","full":true,"drivvo":"6,826 L/100km"},{"date":"2024-07-27","odometer":11802.0,"liters":12.78,"price":35.9,"total":458.802,"station":"Tank ONO","full":true,"drivvo":"6,39 L/100km"},{"date":"2024-08-03","odometer":12359.0,"liters":35.359,"price":49.621,"total":1754.55,"station":"Lignano","full":true,"drivvo":"6,348 L/100km"},{"date":"2024-08-03","odometer":12890.0,"liters":18.62,"price":53.706,"total":1000.0,"station":"Eben (Nord) A10/tauernautobahn-Ebe.","full":false,"drivvo":"6,265 L/100km"},{"date":"2024-08-03","odometer":13139.0,"liters":30.251,"price":35.9,"total":1086.0,"station":"Tank ONO","full":true,"drivvo":"6,265 L/100km"},{"date":"2024-08-11","odometer":13722.0,"liters":36.471,"price":35.9,"total":1309.309,"station":"MAKRO","full":true,"drivvo":"6,256 L/100km"},{"date":"2024-08-30","odometer":14424.0,"liters":37.699,"price":35.9,"total":1353.4,"station":"MAKRO","full":true,"drivvo":"5,37 L/100km"},{"date":"2024-09-19","odometer":14981.0,"liters":38.551,"price":33.2,"total":1279.9,"station":"MAKRO","full":true,"drivvo":"6,921 L/100km"},{"date":"2024-10-08","odometer":15483.0,"liters":36.271,"price":33.9,"total":1229.6,"station":"MAKRO","full":true,"drivvo":"7,225 L/100km"},{"date":"2024-10-27","odometer":15979.0,"liters":37.249,"price":34.1,"total":1270.2,"station":"MAKRO","full":true,"drivvo":"7,51 L/100km"},{"date":"2024-11-14","odometer":16579.0,"liters":40.481,"price":34.3,"total":1388.5,"station":"MAKRO","full":true,"drivvo":"6,747 L/100km"},{"date":"2024-12-01","odometer":17068.0,"liters":36.31,"price":33.5,"total":1216.4,"station":"Tank ONO","full":true,"drivvo":"7,425 L/100km"},{"date":"2024-12-18","odometer":17496.0,"liters":33.689,"price":34.1,"total":1148.8,"station":"MAKRO","full":true,"drivvo":"7,871 L/100km"},{"date":"2024-12-28","odometer":17982.0,"liters":33.791,"price":34.4,"total":1162.4,"station":"MAKRO","full":true,"drivvo":"6,953 L/100km"},{"date":"2025-01-26","odometer":18435.0,"liters":34.901,"price":35.3,"total":1232.0,"station":"MAKRO","full":true,"drivvo":"7,704 L/100km"},{"date":"2025-02-09","odometer":18799.0,"liters":28.079,"price":35.3,"total":991.2,"station":"MAKRO","full":true,"drivvo":"7,714 L/100km"},{"date":"2025-02-27","odometer":19326.0,"liters":39.181,"price":34.2,"total":1340.0,"station":"MAKRO","full":true,"drivvo":"7,435 L/100km"},{"date":"2025-03-21","odometer":19754.0,"liters":34.389,"price":32.9,"total":1131.4,"station":"MAKRO","full":true,"drivvo":"8,035 L/100km"},{"date":"2025-04-12","odometer":20328.0,"liters":41.371,"price":32.9,"total":1361.1,"station":"MAKRO","full":true,"drivvo":"7,207 L/100km"},{"date":"2025-04-24","odometer":20841.0,"liters":33.9,"price":31.9,"total":1081.4,"station":"MAKRO","full":true,"drivvo":"6,608 L/100km"},{"date":"2025-05-10","odometer":21385.0,"liters":39.729,"price":31.7,"total":1259.4,"station":"MAKRO","full":true,"drivvo":"7,303 L/100km"},{"date":"2025-05-22","odometer":21962.0,"liters":41.081,"price":32.1,"total":1318.7,"station":"MAKRO","full":true,"drivvo":"7,12 L/100km"},{"date":"2025-06-08","odometer":22586.0,"liters":8.85,"price":33.9,"total":300.0,"station":"Mirošovice","full":false,"drivvo":"6,255 L/100km"},{"date":"2025-06-08","odometer":22629.0,"liters":32.869,"price":32.7,"total":1074.8,"station":"MAKRO","full":true,"drivvo":"6,255 L/100km"},{"date":"2025-06-26","odometer":23162.0,"liters":37.21,"price":32.9,"total":1224.2,"station":"MAKRO","full":true,"drivvo":"6,981 L/100km"},{"date":"2025-07-08","odometer":23736.0,"liters":40.274,"price":32.9,"total":1325.0,"station":"MAKRO","full":true,"drivvo":"7,016 L/100km"},{"date":"2025-07-19","odometer":24293.0,"liters":37.581,"price":32.9,"total":1236.4,"station":"MAKRO","full":true,"drivvo":"6,747 L/100km"},{"date":"2025-07-20","odometer":24400.0,"liters":7.339,"price":38.9,"total":285.5,"station":"MOL","full":true,"drivvo":"6,859 L/100km"},{"date":"2025-08-07","odometer":26631.0,"liters":36.771,"price":32.3,"total":1187.7,"station":"MAKRO","full":true,"drivvo":"1,648 L/100km"},{"date":"2025-08-22","odometer":27181.0,"liters":41.941,"price":32.1,"total":1346.3,"station":"MAKRO","full":true,"drivvo":"7,626 L/100km"},{"date":"2025-09-07","odometer":27746.0,"liters":38.879,"price":32.3,"total":1255.8,"station":"MAKRO","full":true,"drivvo":"6,881 L/100km"},{"date":"2025-09-21","odometer":28267.0,"liters":32.859,"price":32.6,"total":1071.2,"station":"MAKRO","full":true,"drivvo":"6,307 L/100km"},{"date":"2025-10-20","odometer":28925.0,"liters":37.39,"price":32.8,"total":1226.4,"station":"MAKRO","full":true,"drivvo":"5,682 L/100km"},{"date":"2025-11-08","odometer":29412.0,"liters":36.102,"price":32.5,"total":1173.3,"station":"MAKRO","full":true,"drivvo":"7,413 L/100km"},{"date":"2025-11-30","odometer":29989.0,"liters":40.009,"price":32.5,"total":1300.3,"station":"MAKRO","full":true,"drivvo":"6,934 L/100km"},{"date":"2025-12-16","odometer":30504.0,"liters":38.0,"price":31.5,"total":1197.0,"station":"MAKRO","full":true,"drivvo":"7,379 L/100km"},{"date":"2025-12-30","odometer":30980.0,"liters":36.939,"price":30.9,"total":1141.4,"station":"MAKRO","full":true,"drivvo":"7,76 L/100km"},{"date":"2026-02-01","odometer":31398.0,"liters":33.442,"price":30.8,"total":1030.0,"station":"MAKRO","full":true,"drivvo":"8 L/100km"},{"date":"2026-03-04","odometer":31834.0,"liters":35.161,"price":34.1,"total":1199.0,"station":"MAKRO","full":true,"drivvo":"8,065 L/100km"},{"date":"2026-03-22","odometer":32391.0,"liters":42.609,"price":39.9,"total":1700.1,"station":"MAKRO","full":true,"drivvo":"7,65 L/100km"},{"date":"2026-04-05","odometer":32880.0,"liters":12.23,"price":40.9,"total":500.2,"station":"MAKRO","full":false,"drivvo":"6,684 L/100km"},{"date":"2026-04-10","odometer":33145.0,"liters":38.171,"price":40.9,"total":1561.2,"station":"MAKRO","full":true,"drivvo":"6,684 L/100km"},{"date":"2026-04-26","odometer":33693.0,"liters":41.509,"price":38.9,"total":1614.7,"station":"MAKRO","full":true,"drivvo":"7,575 L/100km"},{"date":"2026-05-23","odometer":34263.0,"liters":39.661,"price":41.9,"total":1661.8,"station":"MAKRO","full":true,"drivvo":"6,958 L/100km"},{"date":"2026-06-07","odometer":34865.0,"liters":40.091,"price":39.5,"total":1583.6,"station":"MAKRO","full":true,"drivvo":"6,66 L/100km"},{"date":"2026-06-21","odometer":35359.0,"liters":31.611,"price":35.5,"total":1122.2,"station":"MAKRO","full":true,"drivvo":"6,399 L/100km"},{"date":"2026-07-08","odometer":35899.0,"liters":37.501,"price":38.5,"total":1443.8,"station":"MAKRO","full":true,"drivvo":"6,945 L/100km"},{"date":"2026-07-15","odometer":36134.0,"liters":17.691,"price":39.5,"total":698.8,"station":"MAKRO","full":true,"drivvo":"7,528 L/100km"},{"date":"2026-07-23","odometer":36642.0,"liters":33.841,"price":41.5,"total":1404.4,"station":"MAKRO","full":true,"drivvo":"6,662 L/100km"},{"date":"2026-07-25","odometer":36789.0,"liters":9.301,"price":41.5,"total":386.0,"station":"MAKRO","full":true,"drivvo":"6,327 L/100km"},{"date":"2026-07-27","odometer":37406.0,"liters":40.36,"price":41.634,"total":1680.33,"station":"BP Swinousti","full":true,"drivvo":"6,541 L/100km"},{"date":"2026-07-30","odometer":37985.0,"liters":11.71,"price":42.7,"total":500.0,"station":"Orlen","full":false,"drivvo":"7,207 L/100km"},{"date":"2026-07-31","odometer":38043.0,"liters":34.2,"price":38.5,"total":1316.7,"station":"MAKRO","full":true,"drivvo":"7,207 L/100km"},{"date":"2026-08-04","odometer":38669.0,"liters":11.674,"price":42.9,"total":500.8,"station":"Ms OIl MĚCHENICE","full":true,"drivvo":"1,865 L/100km"},{"date":"2026-08-08","odometer":38786.0,"liters":39.441,"price":39.9,"total":1573.7,"station":"MAKRO","full":true,"drivvo":"33,71 L/100km"},{"date":"2026-08-19","odometer":39313.0,"liters":38.16,"price":40.5,"total":1545.5,"station":"MAKRO","full":true,"drivvo":"7,241 L/100km"},{"date":"2026-09-05","odometer":39762.0,"liters":29.471,"price":39.9,"total":1175.9,"station":"MAKRO","full":true,"drivvo":"6,564 L/100km"},{"date":"2026-09-20","odometer":40372.0,"liters":40.719,"price":44.9,"total":1828.3,"station":"MAKRO","full":true,"drivvo":"6,675 L/100km"}];
+let data=JSON.parse(localStorage.getItem('mojeTankovani')||'null');
+if(!Array.isArray(data)||data.length===0){data=importedHistory;}
+let vehicles=JSON.parse(localStorage.getItem('mojeTankovaniVehicles')||'null');
+if(!Array.isArray(vehicles)||!vehicles.length){vehicles=[{id:'v1',name:'Hyundai i30 Kombi',fuel:'Benzín',tank:50,plate:'',currentOdo:(data.length?Math.max(...data.map(x=>Number(x.odometer)||0)):0),records:data}];}
+let activeVehicleId=localStorage.getItem('mojeTankovaniActiveVehicle')||vehicles[0].id;
+let activeVehicle=vehicles.find(v=>v.id===activeVehicleId)||vehicles[0];
+data=Array.isArray(activeVehicle.records)?activeVehicle.records:[];
+function persistVehicle(){activeVehicle.records=data;localStorage.setItem('mojeTankovaniVehicles',JSON.stringify(vehicles));localStorage.setItem('mojeTankovaniActiveVehicle',activeVehicle.id);localStorage.setItem('mojeTankovani',JSON.stringify(data));}
+persistVehicle();
+let ocrBusy=false;
+function openModal(){
+ document.getElementById('modal').style.display='flex';
+ ['date','odo','l','p','total','station'].forEach(id=>document.getElementById(id).value='');
+ document.getElementById('full').checked=false;
+ document.getElementById('ocrStatus').textContent='Vyfoť nebo načti účtenku. OCR předvyplní údaje; stav tachometru zadej ručně. Fotka se neukládá.';
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+function pickGallery(){document.getElementById('galleryInput').click();}
+function pickBoth(){document.getElementById('bothInput').click();}
+function normNum(v){if(v==null)return null;let s=String(v).replace(/\s/g,'').replace(/,/g,'.');let n=parseFloat(s);return Number.isFinite(n)?n:null;}
+function parseDateText(t){
+ const raw=String(t||'').replace(/\u00a0/g,' ').replace(/[Oo]/g,'0').replace(/[Il|]/g,'1');
+ let m=raw.match(/\b(20\d{2})\s*[.\/\-]\s*(\d{1,2})\s*[.\/\-]\s*(\d{1,2})\b/);
+ if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+ m=raw.match(/\b(\d{1,2})\s*[.\/\-]\s*(\d{1,2})\s*[.\/\-]\s*(20\d{2})\b/);
+ if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+ m=raw.match(/\b(\d{1,2})\s*[.\:\-\/]\s*(\d{1,2})\s*[.\:\-\/]\s*(2\s*0\s*2\s*[0-9])\b/);
+ if(m){const y=m[3].replace(/\s/g,''); if(y.length===4)return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+ m=raw.match(/\b(0?[1-9]|[12]\d|3[01])(0?[1-9]|1[0-2])(20\d{2})\b/);
+ if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+ return null;
+}
+function extractReceipt(t){
+ const raw=String(t||'').replace(/\u00a0/g,' ');
+ const clean=raw.replace(/[|]/g,' ').replace(/\s+/g,' ');
+ const date=parseDateText(clean);
+ let liters=null,price=null,total=null,station='';
+
+ // Czech fuel receipts often contain: 32,840 l x 43,90 CZK
+ const lm=clean.match(/\(?\s*(\d{1,3}[.,]\d{3})\s*[lI1]\s*\)?/i)
+   ||clean.match(/\b(\d{1,3}[.,]\d{3})\s*[lI1]\b/i);
+ if(lm) liters=normNum(lm[1]);
+
+ const pm=clean.match(/\b[x×*]\s*(\d{2}[.,]\d{2})\s*(?:CZK|Kc|Kč)\b/i)
+   ||clean.match(/\b(\d{2}[.,]\d{2})\s*(?:CZK|Kc|Kč)\s*\/?\s*[lI1]\b/i);
+ if(pm) price=normNum(pm[1]);
+
+ // Prefer an amount on the same line as Celkem / Total / K úhradě.
+ const lines=raw.split(/\r?\n/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
+ for(const line of lines){
+   if(/celkem|total|k\s*úhrad|castka|částka|suma/i.test(line)){
+     const nums=[...line.matchAll(/\b(\d{2,6}[.,]\d{2})\b/g)].map(m=>normNum(m[1])).filter(n=>n>0&&n<100000);
+     if(nums.length){ total=nums[nums.length-1]; break; }
+   }
+ }
+ if(!total){
+   const m=clean.match(/(?:celkem|total|k\s*úhrad[ěe]|částka|castka)\s*:?\s*(\d{2,6}[.,]\d{2})/i);
+   if(m) total=normNum(m[1]);
+ }
+ // Last-resort: if OCR missed the total label, use a large 2-decimal amount
+ // that is consistent with liters × price. This prevents unrelated ST IDs.
+ if(!total && liters && price){
+   const expected=liters*price;
+   const candidates=[...clean.matchAll(/\b(\d{3,6}[.,]\d{2})\b/g)]
+     .map(m=>normNum(m[1])).filter(n=>n>100&&n<100000);
+   const near=candidates.filter(n=>Math.abs(n-expected)<=2);
+   if(near.length) total=near.sort((a,b)=>Math.abs(a-expected)-Math.abs(b-expected))[0];
+   else total=Math.round(expected*100)/100;
+ }
+
+ if(/makro\s*cash\s*&?\s*carry|\bmakro\b/i.test(raw)) station='MAKRO';
+ else if(/shell/i.test(raw)) station='Shell';
+ else if(/\bmol\b/i.test(raw)) station='MOL';
+ else if(/orlen|benzina/i.test(raw)) station='ORLEN';
+ else if(/\bomv\b/i.test(raw)) station='OMV';
+ else if(/tank\s*ono/i.test(raw)) station='Tank ONO';
+ else if(/tesco/i.test(raw)) station='TESCO';
+ else if(/albert/i.test(raw)) station='Albert';
+
+ return {date,liters,price,total,station};
+}
+
+function extractOdo(text, lastKnown=0){
+ const t=String(text||'').replace(/\u00a0/g,' ');
+ const normalized=t.replace(/[Oo]/g,'0').replace(/[Il|]/g,'1');
+ const candidates=[];
+
+ // Strongest signal: number explicitly followed by km.
+ for(const m of normalized.matchAll(/\b(\d{4,6})\s*(?:km|k[mn])\b/gi)){
+   const n=parseInt(m[1],10); if(n>=1000&&n<=999999)candidates.push({n,score:100});
+ }
+
+ // Plain 5-digit numbers are possible odometer readings.
+ for(const m of normalized.matchAll(/\b(\d{5})\b/g)){
+   const n=parseInt(m[1],10); if(n>=10000&&n<=99999)candidates.push({n,score:50});
+ }
+ // Strong model-specific signal: this car's odometer is a five-digit value
+ // near the previous reading, while trip/range values are much smaller.
+ if(lastKnown){
+   for(const m of normalized.matchAll(/\b(\d{4,5})\b/g)){
+     const n=parseInt(m[1],10);
+     if(n>=lastKnown && n<=lastKnown+1500)candidates.push({n,score:85});
+   }
+ }
+
+ if(!candidates.length)return null;
+
+ // Prefer a realistic progression from the last saved odometer.
+ const base=Number(lastKnown)||0;
+ const realistic=candidates.filter(x=>base>0 ? x.n>=base && x.n<=base+2000 : true);
+ const pool=realistic.length?realistic:candidates;
+
+ pool.sort((a,b)=>{
+   const da=base?Math.abs(a.n-base):0, db=base?Math.abs(b.n-base):0;
+   return (b.score-a.score)||(da-db);
+ });
+ return pool[0].n;
+}
+
+async function readExif(file){try{let x=await exifr.parse(file,['DateTimeOriginal','CreateDate']);let d=x?.DateTimeOriginal||x?.CreateDate;if(d){let z=new Date(d);if(!isNaN(z))return z.toISOString().slice(0,10);}}catch(e){}return null;}
+function loadImage(file){
+ return new Promise((resolve,reject)=>{
+   const img=new Image(), url=URL.createObjectURL(file);
+   img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};
+   img.onerror=e=>{URL.revokeObjectURL(url);reject(e)};
+   img.src=url;
+ });
+}
+function canvasBlob(canvas,quality=.94){
+ return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Nelze vytvořit obraz')), 'image/jpeg', quality));
+}
+function makeGrayCanvas(img,x,y,w,h,scale=2,threshold=null){
+ const sx=Math.max(0,Math.floor(img.width*x)), sy=Math.max(0,Math.floor(img.height*y));
+ const sw=Math.max(1,Math.floor(img.width*w)), sh=Math.max(1,Math.floor(img.height*h));
+ const c=document.createElement('canvas'); c.width=Math.min(2200,Math.max(1,Math.round(sw*scale))); c.height=Math.min(1400,Math.max(1,Math.round(sh*scale)));
+ const ctx=c.getContext('2d',{willReadFrequently:true});
+ ctx.imageSmoothingEnabled=true; ctx.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);
+ const im=ctx.getImageData(0,0,c.width,c.height), d=im.data;
+ for(let i=0;i<d.length;i+=4){
+   const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+   let v=Math.max(0,Math.min(255,(g-128)*1.55+128));
+   if(threshold!==null) v=v>=threshold?255:0;
+   d[i]=d[i+1]=d[i+2]=v;
+ }
+ ctx.putImageData(im,0,0);
+ return c;
+}
+async function preprocessImage(file,kind){
+ const img=await loadImage(file);
+ if(kind!=='odo') return makeGrayCanvas(img,0,0,1,1,Math.min(1.2,2200/img.width));
+ // Full dashboard first.
+ return makeGrayCanvas(img,0,0,1,1,Math.min(1.4,1800/img.width));
+}
+async function ocrBlob(blob,psm=7){
+ const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('OCR timeout')),25000));
+ const work=(async()=>{
+   const r=await Tesseract.recognize(blob,'eng',{
+     logger:m=>{
+       if(m.status==='recognizing text'){
+         const pct=Math.round((m.progress||0)*100);
+         document.getElementById('ocrStatus').textContent='OCR '+pct+' %';
+       }
+     },
+     tessedit_pageseg_mode:psm,
+     preserve_interword_spaces:'1'
+   });
+   return r.data.text||'';
+ })();
+ return await Promise.race([work,timeout]);
+}
+
+async function ocrFile(file,kind){
+ const img=await loadImage(file);
+ if(kind==='receipt'){
+   // One OCR pass only. Numeric fields are extracted from the resulting text.
+   const c=makeGrayCanvas(img,0,0,1,1,Math.min(1.6,2200/img.width));
+   return await ocrBlob(await canvasBlob(c),6);
+ }
+
+ // Hyundai i30 dashboard: the outside temperature is in the lower-right
+ // part of the display and the odometer is DIRECTLY BELOW it.
+ // Read only that small area; never OCR the receipt for the odometer.
+ const c=makeGrayCanvas(img,0.50,0.585,0.22,0.105,5.0);
+ return await ocrBlob(await canvasBlob(c),7);
+}
+
+async function handleFiles(files){
+ if(ocrBusy)return;
+ const arr=[...files].slice(0,1);
+ if(!arr.length)return;
+ ocrBusy=true;
+ const status=document.getElementById('ocrStatus');
+ status.textContent='Načítám účtenku…';
+ ['date','odo','l','p','total','station'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+ try{
+  status.textContent='Rozpoznávám účtenku…';
+  const text=await ocrFile(arr[0],'receipt');
+  const receipt=extractReceipt(text);
+  const exif=await readExif(arr[0]);
+  if(receipt?.date)document.getElementById('date').value=receipt.date;
+  else if(exif)document.getElementById('date').value=exif;
+  if(receipt?.liters!=null)document.getElementById('l').value=receipt.liters;
+  if(receipt?.price!=null)document.getElementById('p').value=receipt.price;
+  if(receipt?.total!=null)document.getElementById('total').value=receipt.total;
+  if(receipt?.station)document.getElementById('station').value=receipt.station;
+  document.getElementById('odo').value='';
+  const filled=[];
+  if(receipt?.date)filled.push('datum');
+  if(receipt?.liters!=null)filled.push('litry');
+  if(receipt?.price!=null)filled.push('Kč/l');
+  if(receipt?.total!=null)filled.push('celkem');
+  if(receipt?.station)filled.push('stanice');
+  status.textContent=filled.length?'Hotovo – načteno: '+filled.join(', ')+'. Stav tachometru zadej ručně.':'OCR nedokázalo údaje spolehlivě přečíst. Zkus fotografii znovu.';
+ }catch(e){console.error(e);status.textContent=e?.message==='OCR timeout'?'OCR trvalo příliš dlouho. Zkus fotografii znovu.':'OCR se nepodařilo dokončit. Zkus to znovu.';}
+ finally{ocrBusy=false;}
+}
+function save(){
+ let d=document.getElementById('date').value,
+     o=normNum(document.getElementById('odo').value),
+     l=normNum(document.getElementById('l').value),
+     p=normNum(document.getElementById('p').value),
+     s=document.getElementById('station').value.trim(),
+     f=document.getElementById('full').checked,
+     total=normNum(document.getElementById('total').value);
+ if(!d||!o||!l||!p){alert('Vyplň datum, tachometr, litry a cenu.');return}
+ if(!total) total=Math.round(l*p*100)/100;
+ const last=data.length?Math.max(...data.map(x=>Number(x.odometer)||0)):0;
+ if(last && (o<last || o>last+2000)){
+   if(!confirm(`Tachometr ${o.toLocaleString('cs-CZ')} km vypadá podezřele. Poslední záznam je ${last.toLocaleString('cs-CZ')} km. Opravdu uložit?`)) return;
+ }
+ data.push({date:d,odometer:o,liters:l,price:p,total,station:s,full:f});
+ activeVehicle.currentOdo=Math.max(Number(activeVehicle.currentOdo)||0,o);
+ data.sort((a,b)=>a.odometer-b.odometer);
+ persistVehicle();
+ closeModal();render();
+}
+function calc(){let fs=data.filter(x=>x.full),ints=[];for(let i=1;i<fs.length;i++){let dist=fs[i].odometer-fs[i-1].odometer;if(dist<=0)continue;let ls=data.filter(x=>x.odometer>fs[i-1].odometer&&x.odometer<=fs[i].odometer).reduce((a,x)=>a+x.liters,0);ints.push(ls/dist*100)}return ints.length?ints[ints.length-1]:null;}
+function formatDateTime(v){
+ let s=String(v||'');
+ let m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+ if(!m)return {day:'',date:s,time:''};
+ return {day:m[3],date:`${m[2]}.${m[1]}`,time:m[4]?`${m[4]}:${m[5]}${m[6]?':'+m[6]:''}`:''};
+}
+function renderRefuelDate(v){
+ const f=formatDateTime(v);
+ return `<div class="refuel-date"><span class="day">${f.day}</span><span class="date-rest">${f.date}</span>${f.time?`<span class="time">${f.time}</span>`:''}</div>`;
+}
+function getIntervals(){
+ const sorted=[...data].sort((a,b)=>Number(a.odometer)-Number(b.odometer));
+ const full=sorted.filter(x=>x.full);
+ const ints=[];
+ for(let i=1;i<full.length;i++){
+   const from=Number(full[i-1].odometer), to=Number(full[i].odometer);
+   const km=to-from;
+   if(km<=0)continue;
+   const liters=sorted.filter(x=>Number(x.odometer)>from && Number(x.odometer)<=to)
+     .reduce((a,x)=>a+(Number(x.liters)||0),0);
+   ints.push({from,to,km,liters,avg:liters/km*100});
+ }
+ return ints;
+}
+function openStats(){
+ const totalL=data.reduce((a,x)=>a+(Number(x.liters)||0),0);
+ const totalC=data.reduce((a,x)=>a+(Number(x.total)||0),0);
+ const minO=data.length?Math.min(...data.map(x=>Number(x.odometer)||0)):0;
+ const maxO=data.length?Math.max(...data.map(x=>Number(x.odometer)||0)):0;
+ const distance=Math.max(0,maxO-minO);
+ const ints=getIntervals();
+ const last=ints.length?ints[ints.length-1]:null;
+ const intLiters=ints.reduce((a,x)=>a+x.liters,0);
+ const intKm=ints.reduce((a,x)=>a+x.km,0);
+ const longAvg=intKm?intLiters/intKm*100:null;
+ const price=totalL?totalC/totalL:null;
+ document.getElementById('stLastAvg').textContent=last?last.avg.toFixed(2):'—';
+ document.getElementById('stLongAvg').textContent=longAvg?longAvg.toFixed(2):'—';
+ document.getElementById('stDistance').textContent=distance.toLocaleString('cs-CZ');
+ document.getElementById('stLiters').textContent=totalL.toFixed(1);
+ document.getElementById('stCost').textContent=totalC.toLocaleString('cs-CZ',{maximumFractionDigits:0});
+ document.getElementById('stPrice').textContent=price?price.toFixed(2):'—';
+ document.getElementById('stIntervalKm').textContent=last?last.km.toLocaleString('cs-CZ')+' km':'—';
+ document.getElementById('stIntervalLiters').textContent=last?last.liters.toFixed(2)+' l':'—';
+ document.getElementById('stIntervalAvg').textContent=last?last.avg.toFixed(2)+' l/100 km':'—';
+ document.getElementById('stCount').textContent=data.length.toLocaleString('cs-CZ');
+ document.getElementById('stIntervals').textContent=ints.length.toLocaleString('cs-CZ');
+ document.getElementById('stCostKm').textContent=distance?(totalC/distance).toFixed(2)+' Kč/km':'—';
+ document.getElementById('stOdo').textContent=maxO?maxO.toLocaleString('cs-CZ')+' km':'—';
+ document.getElementById('statsModal').style.display='flex';
+}
+function closeStats(){document.getElementById('statsModal').style.display='none';}
+function getRecordConsumption(record){
+ const ints=getIntervals();
+ const km=Number(record.odometer)||0;
+ // Show the closed full-tank interval that ends at this refueling.
+ const exact=ints.find(i=>i.to===km);
+ if(exact)return exact.avg;
+ // For partial refuels, show the closed interval in which the refuel occurred.
+ const containing=ints.find(i=>km>i.from && km<=i.to);
+ return containing?containing.avg:null;
+}
+function render(){
+ let totalL=data.reduce((a,x)=>a+(Number(x.liters)||0),0),totalC=data.reduce((a,x)=>a+(Number(x.total)||0),0);
+ document.getElementById('liters').textContent=totalL.toFixed(0);
+ document.getElementById('priceAvg').textContent=totalL?(totalC/totalL).toFixed(2):'—';
+ let dist=data.length>1?Math.max(...data.map(x=>Number(x.odometer)||0))-Math.min(...data.map(x=>Number(x.odometer)||0)):0;
+ document.getElementById('distance').textContent=dist.toLocaleString('cs-CZ');
+ let ints=getIntervals(), c=ints.length?ints[ints.length-1].avg:null;
+ document.getElementById('avg').textContent=c?c.toFixed(2):'—';
+ let h=document.getElementById('history');
+ if(!data.length){h.innerHTML='<div style="padding:14px;color:#8793a0;font-size:14px">Zatím žádné tankování.</div>';return}
+ h.innerHTML=[...data].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,5).map(x=>{
+   const avg=getRecordConsumption(x);
+   return `<div class="refuel">
+    ${renderRefuelDate(x.date)}
+    <div><span class="refuel-station">${x.station||'Čerpací stanice'}</span><span class="refuel-sub">${Number(x.odometer).toLocaleString('cs-CZ')} km · ${Number(x.price).toFixed(2)} Kč/l</span><span class="refuel-cons">Ø ${avg!=null?avg.toFixed(2)+' l/100 km':'—'}</span></div>
+    <div class="refuel-liters">${Number(x.liters).toFixed(1)} l</div>
+    <div class="refuel-price">${Number(x.total).toFixed(0)} Kč</div>
+    <div class="refuel-arrow">›</div>
+   </div>`;
+ }).join('');
+ updateVehicleCard();
+ renderChart();
+}
+function openHistory(){
+ let box=document.getElementById('allHistory');
+ box.innerHTML=[...data].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>{
+   const f=formatDateTime(x.date);
+   return `<div class="history-item">
+    <div><b>${f.day}.${f.date}</b>${f.time?`<br><small>${f.time}</small>`:''}</div>
+    <div><b>${x.station||'Čerpací stanice'}</b><br><small>${Number(x.odometer).toLocaleString('cs-CZ')} km · ${Number(x.liters).toFixed(2)} l · ${Number(x.price).toFixed(2)} Kč/l</small></div>
+    <div>${Number(x.total).toFixed(0)} Kč ${x.full?'✓':''}</div>
+   </div>`;
+ }).join('');
+ document.getElementById('historyModal').style.display='flex';
+}
+function closeHistory(){document.getElementById('historyModal').style.display='none';}
+document.querySelector('.panel.last .panel-select').onclick=openHistory;
+function currentOdo(){const saved=Number(activeVehicle.currentOdo)||0;const rec=data.length?Math.max(...data.map(x=>Number(x.odometer)||0)):0;return Math.max(saved,rec);}
+function updateVehicleCard(){const odo=currentOdo();const ints=getIntervals();const lastAvg=ints.length?ints[ints.length-1].avg:null;const totalL=data.reduce((a,x)=>a+(Number(x.liters)||0),0);const va=document.getElementById('vehicleAvg');if(va)va.textContent=lastAvg!=null?lastAvg.toFixed(2):'—';const vl=document.getElementById('vehicleLiters');if(vl)vl.textContent=totalL.toFixed(0);const vf=document.getElementById('vehicleFuel');if(vf)vf.textContent=activeVehicle.fuel;const vt=document.getElementById('vehicleTank');if(vt)vt.textContent=Number(activeVehicle.tank||0).toLocaleString('cs-CZ')+' l';const line=document.querySelector('.vehicle-line');if(line)line.innerHTML=`<span>⛽ ${activeVehicle.fuel}</span><span>▣ ${Number(activeVehicle.tank||0).toLocaleString('cs-CZ')} l</span><span>↗ ${odo?odo.toLocaleString('cs-CZ'):'—'} km</span>`;const title=document.querySelector('.vehicle-title');if(title)title.textContent=activeVehicle.name;const vo=document.getElementById('vehicleOdo');if(vo)vo.textContent=odo?odo.toLocaleString('cs-CZ')+' km':'—';const vc=document.getElementById('vehicleCount');if(vc)vc.textContent=data.length.toLocaleString('cs-CZ');const vb=document.querySelector('.vehicle-big');if(vb)vb.textContent=activeVehicle.name;}
+function openVehicle(){updateVehicleCard();document.getElementById('vehicleModal').style.display='flex';}
+function closeVehicle(){document.getElementById('vehicleModal').style.display='none';}
+function setNav(el){document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');}
+function navHome(el){setNav(el);closeHistory();closeStats();closeVehicle();window.scrollTo({top:0,behavior:'smooth'});}
+function navHistory(el){setNav(el);closeStats();closeVehicle();openHistory();}
+function navStats(el){setNav(el);closeHistory();closeVehicle();openStats();}
+function navVehicle(el){setNav(el);closeHistory();closeStats();closeVehicle();openSettings();}
+function changeChartPeriod(){const v=document.getElementById('chartPeriod').value;document.getElementById('customPeriod').style.display=v==='custom'?'flex':'none';renderChart();}
+function getChartItems(){const ints=getIntervals();if(!ints.length)return [];const now=new Date();let from=null,to=null;const sel=document.getElementById('chartPeriod')?.value||'12';if(sel==='custom'){from=document.getElementById('chartFrom').value?new Date(document.getElementById('chartFrom').value+'T00:00:00'):null;to=document.getElementById('chartTo').value?new Date(document.getElementById('chartTo').value+'T23:59:59'):null;}else if(sel!=='all'){from=new Date(now.getFullYear(),now.getMonth()-Number(sel)+1,1);}return ints.filter(x=>{const d=data.find(r=>Number(r.odometer)===x.to);if(!d)return false;const dt=new Date(String(d.date).slice(0,10)+'T12:00:00');return (!from||dt>=from)&&(!to||dt<=to);});}
+function renderChart(){const box=document.getElementById('consumptionChart'),labels=document.getElementById('chartLabels');if(!box||!labels)return;const items=getChartItems();if(!items.length){box.innerHTML='<div class="chart-empty">Pro zvolené období nejsou uzavřené intervaly.</div>';labels.innerHTML='';return;}const vals=items.map(x=>x.avg),min=Math.max(0,Math.min(...vals)-.8),max=Math.max(...vals)+.8,range=Math.max(.5,max-min),w=700,h=130,pad=10;const pts=items.map((x,i)=>{const xx=items.length===1?w/2:(i/(items.length-1))*w;const yy=pad+(max-x.avg)/range*(h-pad*2);return [xx,yy];});const points=pts.map(p=>p.join(',')).join(' '),area=`0,${h} ${points} ${w},${h}`;box.innerHTML=`<svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${points}" fill="none" stroke="#1769d1" stroke-width="3"/><polyline points="${area}" fill="#1769d1" opacity=".08"/>${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#1769d1"/>`).join('')}</svg>`;labels.innerHTML=items.map(x=>{const d=data.find(r=>Number(r.odometer)===x.to);return `<span title="${x.avg.toFixed(2)} l/100 km">${String(d?.date||'').slice(0,7)}</span>`}).join('');}
+
+function openSettings(){renderVehicleSettings();const fs=localStorage.getItem('mojeTankovaniFontScale')||'1';document.getElementById('fontScale').value=fs;document.getElementById('darkMode').checked=localStorage.getItem('mojeTankovaniDark')==='1';document.getElementById('settingsModal').style.display='flex';}
+function closeSettings(){document.getElementById('settingsModal').style.display='none';}
+function renderVehicleSettings(){const box=document.getElementById('vehicleList');box.innerHTML=vehicles.map(v=>{const odo=(v.records||[]).length?Math.max(...v.records.map(x=>Number(x.odometer)||0)):0;return `<div class="vehicle-setting ${v.id===activeVehicle.id?'active':''}"><div class="vehicle-setting-main"><div class="vehicle-setting-name">${escapeHtml(v.name)}${v.id===activeVehicle.id?' ✓':''}</div><div class="vehicle-setting-meta">${escapeHtml(v.fuel)} · ${Number(v.tank||0)} l · ${odo?odo.toLocaleString('cs-CZ'):'—'} km · ${(v.records||[]).length} tankování</div></div><button onclick="selectVehicle('${v.id}')">${v.id===activeVehicle.id?'Aktivní':'Použít'}</button><button onclick="openVehicleEditor('${v.id}')">Upravit</button>${vehicles.length>1?`<button onclick="deleteVehicle('${v.id}')">Smazat</button>`:''}</div>`}).join('');}
+function escapeHtml(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function openVehicleEditor(id){const v=id?vehicles.find(x=>x.id===id):null;document.getElementById('vehicleEditorTitle').textContent=v?'Upravit vozidlo':'Přidat vozidlo';document.getElementById('vehicleEditorModal').dataset.id=v?v.id:'';document.getElementById('vName').value=v?.name||'';document.getElementById('vFuel').value=v?.fuel||'Benzín';document.getElementById('vTank').value=v?.tank??50;document.getElementById('vPlate').value=v?.plate||'';document.getElementById('vOdo').value=v?(Number(v.currentOdo)|| (v.records?.length?Math.max(...v.records.map(x=>Number(x.odometer)||0)):0)):'';document.getElementById('vehicleEditorModal').style.display='flex';}
+function closeVehicleEditor(){document.getElementById('vehicleEditorModal').style.display='none';}
+function saveVehicle(){const name=document.getElementById('vName').value.trim(),fuel=document.getElementById('vFuel').value,tank=Number(document.getElementById('vTank').value)||0,plate=document.getElementById('vPlate').value.trim(),odo=Number(document.getElementById('vOdo').value)||0;if(!name){alert('Zadej název vozidla.');return}const id=document.getElementById('vehicleEditorModal').dataset.id;if(id){const v=vehicles.find(x=>x.id===id);v.name=name;v.fuel=fuel;v.tank=tank;v.plate=plate;v.currentOdo=odo||v.currentOdo||0;if(activeVehicle.id===id){activeVehicle=v;data=v.records||[];}}else{const v={id:'v'+Date.now(),name,fuel,tank,plate,currentOdo:odo,records:[]};vehicles.push(v);activeVehicle=v;activeVehicleId=v.id;data=v.records;}persistVehicle();closeVehicleEditor();renderVehicleSettings();render();}
+function selectVehicle(id){const v=vehicles.find(x=>x.id===id);if(!v)return;persistVehicle();activeVehicle=v;activeVehicleId=v.id;data=v.records||[];localStorage.setItem('mojeTankovaniActiveVehicle',v.id);localStorage.setItem('mojeTankovani',JSON.stringify(data));closeVehicle();closeSettings();render();window.scrollTo({top:0,behavior:'smooth'});}
+function deleteVehicle(id){if(vehicles.length<=1){alert('Musí zůstat alespoň jedno vozidlo.');return}const v=vehicles.find(x=>x.id===id);if(!v)return;if(!confirm(`Opravdu smazat vozidlo „${v.name}“ včetně jeho tankování?`))return;vehicles=vehicles.filter(x=>x.id!==id);if(activeVehicle.id===id){activeVehicle=vehicles[0];activeVehicleId=activeVehicle.id;data=activeVehicle.records||[];}persistVehicle();renderVehicleSettings();render();}
+function setFontScale(v){document.body.classList.remove('font-large','font-xl');if(Number(v)>=1.4)document.body.classList.add('font-xl');else if(Number(v)>=1.12)document.body.classList.add('font-large');localStorage.setItem('mojeTankovaniFontScale',v);}
+function setDarkMode(on){document.body.classList.toggle('dark',on);localStorage.setItem('mojeTankovaniDark',on?'1':'0');}
+function applySettings(){setFontScale(localStorage.getItem('mojeTankovaniFontScale')||'1');setDarkMode(localStorage.getItem('mojeTankovaniDark')==='1');}
+function exportBackup(){persistVehicle();const payload={version:2,app:'MOJE TANKOVÁNÍ',activeVehicleId,vehicles};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='moje-tankovani-zaloha.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+async function importBackup(file){if(!file)return;try{const obj=JSON.parse(await file.text());const vs=Array.isArray(obj.vehicles)?obj.vehicles:null;if(!vs||!vs.length)throw new Error('Soubor neobsahuje vozidla.');vehicles=vs;activeVehicle=vehicles.find(v=>v.id===obj.activeVehicleId)||vehicles[0];activeVehicleId=activeVehicle.id;data=activeVehicle.records||[];persistVehicle();closeSettings();render();alert('Záloha byla načtena.');}catch(e){alert('Zálohu se nepodařilo načíst: '+e.message);}}
+applySettings();
+render();
+</script>
+
+<script id="moje-tankovani-settings-fix">
+(function () {
+  function callIfExists(names) {
+    for (const name of names) {
+      try {
+        if (typeof window[name] === 'function') {
+          window[name]();
+          return true;
+        }
+      } catch (e) {}
+    }
+    return false;
+  }
+
+  function showBySelectors(selectors) {
+    for (const s of selectors) {
+      const el = document.querySelector(s);
+      if (!el) continue;
+      el.style.display = '';
+      el.hidden = false;
+      el.classList.add('open', 'active', 'show');
+      if (el.classList.contains('modal')) el.style.display = 'flex';
+      return true;
+    }
+    return false;
+  }
+
+  window.openCarSettingsFixed = function () {
+    if (callIfExists(['openVehicle', 'openVehicleSettings', 'renderVehicleSettings'])) return;
+    showBySelectors([
+      '#vehicleSettings', '#vehicle-settings', '#vehicleModal',
+      '.vehicle-settings', '.vehicle-modal'
+    ]);
+  };
+
+  window.openAppSettingsFixed = function () {
+    if (callIfExists(['openSettings', 'openAppSettings'])) return;
+    showBySelectors([
+      '#settings', '#appSettings', '#settingsModal',
+      '.settings', '.settings-modal'
+    ]);
+  };
+
+  document.addEventListener('click', function (ev) {
+    const t = ev.target.closest('button, a, [role="button"]');
+    if (!t) return;
+
+    const txt = (t.textContent || '').trim().toLowerCase();
+    const aria = (t.getAttribute('aria-label') || '').toLowerCase();
+    const title = (t.getAttribute('title') || '').toLowerCase();
+    const all = txt + ' ' + aria + ' ' + title;
+
+    if (all.includes('nastavení vozu') || all.includes('nastaveni vozu') ||
+        all.includes('vozidlo') || all.includes('vůz') || all.includes('vuz')) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.openCarSettingsFixed();
+      return;
+    }
+
+    if ((all.includes('nastavení') || all.includes('nastaveni')) &&
+        !all.includes('vozu') && !all.includes('vozidla') &&
+        !all.includes('vůz') && !all.includes('vuz')) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.openAppSettingsFixed();
+    }
+  }, true);
+})();
+</script>
+
+
+<script id="mt-home-clean-js">
+(function(){
+  function cleanHome(){
+    const root=document.querySelector('main')||document.body;
+    const names=['Průměrná spotřeba','Průměrná cena','Celkem ujeto','Celkem natankováno'];
+    root.querySelectorAll('div,section,article').forEach(el=>{
+      const t=(el.textContent||'').replace(/\s+/g,' ').trim();
+      if(t.length>0 && t.length<100 && names.includes(t) && !el.closest('.vehicle-card')){
+        const p=el.parentElement;
+        if(p && p!==root) p.style.display='none';
+        el.style.display='none';
+      }
+    });
+    root.querySelectorAll('button,a').forEach(el=>{
+      const t=(el.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+      if((t==='statistiky'||t==='zobrazit statistiky') &&
+         !el.closest('nav')&&!el.closest('.bottom-nav')&&!el.closest('.bottomNav')){
+        el.style.display='none';
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded',cleanHome);
+  window.addEventListener('load',cleanHome);
+  setTimeout(cleanHome,500);
+  setTimeout(cleanHome,1500);
+})();
+</script>
+
+
+<script id="mt-professional-home-fix-js">
+(function(){
+  const STAT_NAMES = new Set([
+    'průměrná spotřeba',
+    'průměrná cena',
+    'celkem ujeto',
+    'celkem natankováno'
+  ]);
+
+  function clean(){
+    const home =
+      document.querySelector('#home') ||
+      document.querySelector('[data-page="home"]') ||
+      document.querySelector('main') ||
+      document.body;
+
+    // Najdi prvky, jejichž vlastní text je přesně jeden z nežádoucích titulků.
+    const hits = [];
+    home.querySelectorAll('*').forEach(el=>{
+      const t=(el.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+      if(STAT_NAMES.has(t)) hits.push(el);
+    });
+
+    // Pro každý titulek najdi nejbližší vizuální kartu/grid-child.
+    const remove = new Set();
+    hits.forEach(el=>{
+      let p=el;
+      for(let i=0;i<5 && p && p!==home;i++,p=p.parentElement){
+        const cls=(p.className||'').toString().toLowerCase();
+        if(/stat|metric|tile|card|summary|quick/.test(cls)){
+          remove.add(p);
+          return;
+        }
+      }
+      if(el.parentElement && el.parentElement!==home) remove.add(el.parentElement);
+    });
+    remove.forEach(el=>el.remove());
+
+    // Odstraň Home tlačítko Statistiky podle textu, ale NIKDY ne ze spodní navigace.
+    home.querySelectorAll('button,a,[role="button"]').forEach(el=>{
+      if(el.closest('nav,.bottom-nav,.bottomNav,[class*="bottom"]')) return;
+      const t=(el.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+      const aria=(el.getAttribute('aria-label')||'').toLowerCase();
+      const title=(el.getAttribute('title')||'').toLowerCase();
+      if(t==='statistiky' || t==='zobrazit statistiky' ||
+         aria==='statistiky' || title==='statistiky'){
+        el.remove();
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',clean);
+  window.addEventListener('load',clean);
+  [100,300,700,1500,3000].forEach(ms=>setTimeout(clean,ms));
+
+  // Zachytí změny způsobené render() bez zásahu do původního JS.
+  const observer=new MutationObserver(()=>clean());
+  observer.observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+
+<script id="mt-vehicle-card-v5-js">
+(function(){
+  function compactVehicleCard(){
+    document.querySelectorAll('.vehicle-card').forEach(card=>{
+      card.querySelectorAll('img,picture,.vehicle-image,.car-image').forEach(el=>el.remove());
+      card.style.minHeight='145px';
+      card.style.height='145px';
+      card.style.padding='16px 20px';
+      card.style.display='block';
+      card.style.overflow='hidden';
+    });
+  }
+  document.addEventListener('DOMContentLoaded',compactVehicleCard);
+  window.addEventListener('load',compactVehicleCard);
+  [200,700,1500].forEach(t=>setTimeout(compactVehicleCard,t));
+})();
+</script>
+
+
+<script id="mt-excel-backup">
+(function(){
+ const HEAD=['Datum','Tachometr (km)','Litry','Cena (Kč/l)','Celkem (Kč)','Čerpací stanice','Plná nádrž','Drivvo'];
+ const need=()=>{if(typeof XLSX==='undefined'){alert('Knihovna pro Excel se nenačetla (je potřeba internet). Zkus to znovu online.');return false}return true};
+ const num=v=>{if(typeof v==='number')return v;if(v==null||v==='')return NaN;return Number(String(v).replace(/\s/g,'').replace(',','.'))};
+ function toIso(v){
+  if(v instanceof Date&&!isNaN(v))return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  if(typeof v==='number'&&v>20000)return new Date(Math.round((v-25569)*864e5)).toISOString().slice(0,10);
+  const t=String(v||'').trim();let m;
+  if(m=t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  if(m=t.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/))return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  return '';
+ }
+ const yes=v=>v===true||/^(ano|yes|true|1)$/i.test(String(v).trim());
+ function sheetName(name,used){
+  let b=String(name||'Vozidlo').replace(/[\\\/\?\*\[\]:]/g,' ').trim().slice(0,28)||'Vozidlo',n=b,i=2;
+  while(used.has(n.toLowerCase())||n.toLowerCase()==='vozidla'){n=b.slice(0,26)+' '+i++}
+  used.add(n.toLowerCase());return n;
+ }
+ window.exportExcel=function(){
+  if(!need())return;
+  try{
+   persistVehicle();
+   const wb=XLSX.utils.book_new(),used=new Set(),info=[['ID','Název','Palivo','Nádrž (l)','SPZ','Stav tachometru (km)','Aktivní','List']];
+   const sheets=[];
+   vehicles.forEach(v=>{
+    const name=sheetName(v.name,used);
+    info.push([v.id,v.name||'',v.fuel||'',Number(v.tank)||0,v.plate||'',Number(v.currentOdo)||0,v.id===activeVehicle.id?'ano':'ne',name]);
+    const rows=(v.records||[]).slice().sort((a,b)=>(Number(a.odometer)||0)-(Number(b.odometer)||0)).map(r=>[r.date||'',Number(r.odometer)||0,Number(r.liters)||0,Number(r.price)||0,Number(r.total)||0,r.station||'',r.full===false?'ne':'ano',r.drivvo||'']);
+    const ws=XLSX.utils.aoa_to_sheet([HEAD].concat(rows));
+    ws['!cols']=[{wch:12},{wch:15},{wch:9},{wch:12},{wch:12},{wch:22},{wch:11},{wch:14}];
+    sheets.push([name,ws]);
+   });
+   const wi=XLSX.utils.aoa_to_sheet(info);
+   wi['!cols']=[{wch:8},{wch:24},{wch:10},{wch:10},{wch:10},{wch:20},{wch:8},{wch:24}];
+   XLSX.utils.book_append_sheet(wb,wi,'Vozidla');
+   sheets.forEach(([n,ws])=>XLSX.utils.book_append_sheet(wb,ws,n));
+   const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+   const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='moje-tankovani-zaloha.xlsx';
+   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }catch(e){alert('Export do Excelu se nepodařil: '+e.message)}
+ };
+ window.importExcel=async function(file){
+  if(!file||!need())return;
+  try{
+   const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+   const wi=wb.Sheets['Vozidla'];if(!wi)throw new Error('Chybí list „Vozidla“. Použij soubor vytvořený exportem z aplikace.');
+   const info=XLSX.utils.sheet_to_json(wi,{defval:''});if(!info.length)throw new Error('List „Vozidla“ je prázdný.');
+   let skipped=0;
+   const vs=info.map((r,i)=>{
+    const ws=wb.Sheets[r['List']];
+    const recs=ws?XLSX.utils.sheet_to_json(ws,{defval:''}).map(x=>{
+     const date=toIso(x['Datum']),o=num(x['Tachometr (km)']),l=num(x['Litry']),p=num(x['Cena (Kč/l)']);
+     if(!date||!(o>0)||!(l>0)||!(p>0)){skipped++;return null}
+     let t=num(x['Celkem (Kč)']);if(!(t>0))t=Math.round(l*p*100)/100;
+     const rec={date,odometer:o,liters:l,price:p,total:t,station:String(x['Čerpací stanice']||'').trim(),full:x['Plná nádrž']===''?true:yes(x['Plná nádrž'])};
+     if(x['Drivvo']!=='')rec.drivvo=String(x['Drivvo']);
+     return rec;
+    }).filter(Boolean).sort((a,b)=>a.odometer-b.odometer):[];
+    const odo=recs.length?Math.max(...recs.map(z=>z.odometer)):0;
+    return {id:String(r['ID']||('v'+(i+1))),name:String(r['Název']||('Vozidlo '+(i+1))),fuel:String(r['Palivo']||'Benzín'),tank:num(r['Nádrž (l)'])||50,plate:String(r['SPZ']||''),currentOdo:Math.max(num(r['Stav tachometru (km)'])||0,odo),records:recs,_active:yes(r['Aktivní'])};
+   });
+   const total=vs.reduce((a,v)=>a+v.records.length,0);
+   if(!confirm('Načíst '+vs.length+' vozidel a '+total+' záznamů z Excelu? Aktuální data v aplikaci budou nahrazena.'))return;
+   const act=vs.find(v=>v._active)||vs[0];vs.forEach(v=>delete v._active);
+   vehicles=vs;activeVehicle=act;activeVehicleId=act.id;data=act.records;
+   persistVehicle();closeSettings();render();
+   alert('Záloha z Excelu byla načtena.'+(skipped?(' Přeskočeno neplatných řádků: '+skipped+'.'):''));
+  }catch(e){alert('Excel se nepodařilo načíst: '+e.message)}
+ };
+})();
+</script>
+</body>
+</html>
