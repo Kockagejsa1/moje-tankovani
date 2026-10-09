@@ -135,6 +135,20 @@ body.font-large{font-size:18px}body.font-large .vehicle-title{font-size:21px}bod
 body.font-xl{font-size:20px}body.font-xl .vehicle-title{font-size:23px}body.font-xl .vehicle-line{font-size:18px}body.font-xl .panel-title{font-size:21px}body.font-xl .refuel-station{font-size:19px}body.font-xl .refuel-sub{font-size:15px}body.font-xl .refuel-cons{font-size:16px}body.font-xl .refuel-liters{font-size:17px}body.font-xl .refuel-price{font-size:18px}
 
 /* Barevná témata aplikace */
+
+/* Spodní navigace: bez barevného podbarvení tlačítek */
+.bottom .nav button,
+.nav button,
+.nav button.active,
+.bottom .nav button:focus,
+.bottom .nav button:active {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.bottom .nav button.active {
+  color: var(--blue) !important;
+}
+
 :root{--themeText:#fff}
 .header{background:var(--blue)!important}
 .header .gear{color:var(--themeText)!important}
