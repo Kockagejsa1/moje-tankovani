@@ -537,22 +537,27 @@ body.dark .cg-dot{stroke:#1b2430}body.dark .cg-info{color:#d5dee8}
  bottom:calc(var(--navh,74px) + 10px)!important;margin:0!important;padding:0 14px!important;z-index:30!important;pointer-events:none;display:block!important}
 .actions .action{width:100%!important;pointer-events:auto;padding:15px 10px!important;font-size:16px!important;border-radius:12px!important;box-shadow:0 4px 14px #1769d155}
 
-/* Spodní panel je úplně bez podbarvení */
-.bottom,
-.bottom nav,
-.bottom .nav,
-.bottom .nav button,
-.bottom .nav button.active,
-body.dark .bottom,
-body.dark .bottom .nav button,
-body.dark .bottom .nav button.active {
+/* Spodní navigace: úplně průhledná, bez podsvícení */
+nav.bottom,
+nav.bottom .nav,
+nav.bottom .nav button,
+nav.bottom .nav button.active,
+nav.bottom .nav button:hover,
+nav.bottom .nav button:focus,
+nav.bottom .nav button:active,
+body.dark nav.bottom,
+body.dark nav.bottom .nav,
+body.dark nav.bottom .nav button,
+body.dark nav.bottom .nav button.active {
   background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
 }
-.bottom {
-  border-top: none !important;
+nav.bottom {
+  border: 0 !important;
+  outline: 0 !important;
 }
-.bottom .nav button.active {
+nav.bottom .nav button.active {
   color: var(--blue) !important;
 }
 </style>
