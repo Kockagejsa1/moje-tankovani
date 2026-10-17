@@ -724,8 +724,10 @@ function persistVehicle(){activeVehicle.records=data;localStorage.setItem('mojeT
 persistVehicle();
 let ocrBusy=false;
 let editingRefuelIndex=null;
+let returnToHistoryAfterEdit=false;
 function openModal(){
  editingRefuelIndex=null;
+ returnToHistoryAfterEdit=false;
  document.getElementById('refuelModalTitle').textContent='Nové tankování';
  document.getElementById('refuelSaveButton').textContent='Uložit';
  document.getElementById('modal').style.display='flex';
@@ -737,6 +739,7 @@ function editRefuel(index){
  const record=data[index];
  if(!record){alert('Tankování se nepodařilo najít.');return;}
  editingRefuelIndex=index;
+ returnToHistoryAfterEdit=true;
  document.getElementById('refuelModalTitle').textContent='Upravit tankování';
  document.getElementById('refuelSaveButton').textContent='Uložit změny';
  document.getElementById('date').value=String(record.date||'').slice(0,10);
@@ -961,6 +964,7 @@ function save(){
  if(!d||o===null||o<0||l===null||l<=0||p===null||p<=0){alert('Vyplň platné datum, tachometr, litry a cenu.');return}
  if(total===null||total<=0) total=Math.round(l*p*100)/100;
  const isEditing=editingRefuelIndex!==null;
+ const shouldReturnToHistory=isEditing&&returnToHistoryAfterEdit;
  const last=data.length?Math.max(...data.map(x=>Number(x.odometer)||0)):0;
  if(!isEditing && last && (o<last || o>last+2000)){
    if(!confirm(`Tachometr ${o.toLocaleString('cs-CZ')} km vypadá podezřele. Poslední záznam je ${last.toLocaleString('cs-CZ')} km. Opravdu uložit?`)) return;
@@ -976,7 +980,8 @@ function save(){
  closeModal();
  render();
  if(document.getElementById('statsModal').style.display==='flex') openStats();
- if(document.getElementById('historyModal').style.display==='flex') openHistory();
+ if(shouldReturnToHistory) openHistory();
+ else if(document.getElementById('historyModal').style.display==='flex') openHistory();
 }
 function calc(){let fs=data.filter(x=>x.full),ints=[];for(let i=1;i<fs.length;i++){let dist=fs[i].odometer-fs[i-1].odometer;if(dist<=0)continue;let ls=data.filter(x=>x.odometer>fs[i-1].odometer&&x.odometer<=fs[i].odometer).reduce((a,x)=>a+x.liters,0);ints.push(ls/dist*100)}return ints.length?ints[ints.length-1]:null;}
 function formatDateTime(v){
