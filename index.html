@@ -1062,7 +1062,7 @@ function render(){
     ${renderRefuelDate(x.date)}
     <div><span class="refuel-station">${x.station||'Čerpací stanice'}</span><span class="refuel-sub">${Number(x.odometer).toLocaleString('cs-CZ')} km · ${Number(x.price).toFixed(2)} Kč/l</span><span class="refuel-cons">Ø ${avg!=null?avg.toFixed(2)+' l/100 km':'—'}</span></div>
     <div class="refuel-liters">${Number(x.liters).toFixed(1)} l</div>
-    <div class="refuel-price">${Number(x.total).toFixed(0)} Kč</div>
+    <div class="refuel-price">${Number(x.total).toLocaleString('cs-CZ',{maximumFractionDigits:2})} Kč</div>
     <div class="refuel-arrow">›</div>
    </div>`;
  }).join('');
@@ -1076,7 +1076,7 @@ function openHistory(){
    return `<div class="history-item">
     <div><b>${f.day}.${f.date}</b>${f.time?`<br><small>${f.time}</small>`:''}</div>
     <div><b>${escapeHtml(x.station||'Čerpací stanice')}</b><br><small>${Number(x.odometer).toLocaleString('cs-CZ')} km · ${Number(x.liters).toFixed(2)} l · ${Number(x.price).toFixed(2)} Kč/l</small><br><small style="color:#1769d1;font-weight:700">Ø ${av!=null?av.toFixed(2)+' l/100 km':'—'}</small></div>
-    <div style="text-align:right;white-space:nowrap">${Number(x.total).toLocaleString('cs-CZ',{maximumFractionDigits:0})} Kč ${x.full?'✓':''}<br><button type="button" onclick="editRefuel(${recordIndex})" style="margin-top:6px;padding:6px 9px;border:1px solid var(--blue);border-radius:7px;background:#fff;color:var(--blue);font-weight:700">Upravit</button></div>
+    <div style="text-align:right;white-space:nowrap">${Number(x.total).toLocaleString('cs-CZ',{maximumFractionDigits:2})} Kč ${x.full?'✓':''}<br><button type="button" onclick="editRefuel(${recordIndex})" style="margin-top:6px;padding:6px 9px;border:1px solid var(--blue);border-radius:7px;background:#fff;color:var(--blue);font-weight:700">Upravit</button></div>
    </div>`;
  }).join('');
  document.getElementById('historyModal').style.display='flex';
