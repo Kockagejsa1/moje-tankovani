@@ -616,7 +616,7 @@ body.dark nav.bottom .nav {
 
 <div class="modal vehicle-modal" id="vehicleModal"><div class="modalbox"><button class="history-close" onclick="closeVehicle()">✕</button><h2>Vozidlo</h2><div class="vehicle-big">Hyundai i30 Kombi</div><div class="vehicle-detail"><div><small>Palivo</small><b id="vehicleFuel">—</b></div><div><small>Nádrž</small><b id="vehicleTank">—</b></div><div><small>Aktuální tachometr</small><b id="vehicleOdo">—</b></div><div><small>Počet tankování</small><b id="vehicleCount">0</b></div></div><div class="modal-actions"><button class="save" onclick="closeVehicle();openSettings();openVehicleEditor()">＋ Přidat vůz</button><button onclick="closeVehicle()">Zavřít</button></div></div></div>
 <div class="modal" id="modal"><div class="modalbox">
-<h2>Nové tankování</h2>
+<h2 id="refuelModalTitle">Nové tankování</h2>
 <div class="photo-tools">
 <button type="button" onclick="document.getElementById('cameraInput').click()">📷 Vyfotit účtenku</button>
 <button type="button" onclick="pickGallery()">🖼️ Načíst účtenku z galerie</button>
@@ -634,7 +634,7 @@ body.dark nav.bottom .nav {
 <label class="wide">Čerpací stanice<input id="station" placeholder="Např. MOL"></label>
 <label class="wide"><input type="checkbox" id="full" style="width:auto"> Plná nádrž</label>
 </div>
-<div class="modal-actions"><button class="save" onclick="save()">Uložit</button><button onclick="closeModal()">Zrušit</button></div>
+<div class="modal-actions"><button class="save" id="refuelSaveButton" onclick="save()">Uložit</button><button onclick="closeModal()">Zrušit</button></div>
 </div></div>
 
 
@@ -687,7 +687,7 @@ body.dark nav.bottom .nav {
    <div class="stats-card"><div class="sl">Dlouhodobá spotřeba</div><div class="sv" id="stLongAvg">—</div><div class="su">l/100 km</div></div>
    <div class="stats-card"><div class="sl">Celkem ujeto</div><div class="sv" id="stDistance">—</div><div class="su">km</div></div>
    <div class="stats-card"><div class="sl">Celkem natankováno</div><div class="sv" id="stLiters">—</div><div class="su">l</div></div>
-   <div class="stats-card"><div class="sl">Celkem zaplaceno</div><div class="sv" id="stCost">—</div><div class="su">Kč</div></div>
+   <div class="stats-card" style="grid-column:1/-1"><div class="sl">Celkový součet tankování</div><div class="sv" id="stCost">—</div><div class="su">Kč</div></div>
    <div class="stats-card"><div class="sl">Průměrná cena paliva</div><div class="sv" id="stPrice">—</div><div class="su">Kč/l</div></div>
   </div>
   <div class="stats-section">
@@ -723,13 +723,34 @@ data=Array.isArray(activeVehicle.records)?activeVehicle.records:[];
 function persistVehicle(){activeVehicle.records=data;localStorage.setItem('mojeTankovaniVehicles',JSON.stringify(vehicles));localStorage.setItem('mojeTankovaniActiveVehicle',activeVehicle.id);localStorage.setItem('mojeTankovani',JSON.stringify(data));}
 persistVehicle();
 let ocrBusy=false;
+let editingRefuelIndex=null;
 function openModal(){
+ editingRefuelIndex=null;
+ document.getElementById('refuelModalTitle').textContent='Nové tankování';
+ document.getElementById('refuelSaveButton').textContent='Uložit';
  document.getElementById('modal').style.display='flex';
  ['date','odo','l','p','total','station'].forEach(id=>document.getElementById(id).value='');
  document.getElementById('full').checked=false;
  document.getElementById('ocrStatus').textContent='Vyfoť nebo načti účtenku. OCR předvyplní údaje; stav tachometru zadej ručně. Fotka se neukládá.';
 }
-function closeModal(){document.getElementById('modal').style.display='none';}
+function editRefuel(index){
+ const record=data[index];
+ if(!record){alert('Tankování se nepodařilo najít.');return;}
+ editingRefuelIndex=index;
+ document.getElementById('refuelModalTitle').textContent='Upravit tankování';
+ document.getElementById('refuelSaveButton').textContent='Uložit změny';
+ document.getElementById('date').value=String(record.date||'').slice(0,10);
+ document.getElementById('odo').value=record.odometer??'';
+ document.getElementById('l').value=record.liters??'';
+ document.getElementById('p').value=record.price??'';
+ document.getElementById('total').value=record.total??'';
+ document.getElementById('station').value=record.station||'';
+ document.getElementById('full').checked=!!record.full;
+ document.getElementById('ocrStatus').textContent='Uprav údaje tankování a ulož změny.';
+ document.getElementById('historyModal').style.display='none';
+ document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none';editingRefuelIndex=null;}
 function pickGallery(){document.getElementById('galleryInput').click();}
 function pickBoth(){document.getElementById('bothInput').click();}
 function normNum(v){if(v==null)return null;let s=String(v).replace(/\s/g,'').replace(/,/g,'.');let n=parseFloat(s);return Number.isFinite(n)?n:null;}
@@ -937,17 +958,25 @@ function save(){
      s=document.getElementById('station').value.trim(),
      f=document.getElementById('full').checked,
      total=normNum(document.getElementById('total').value);
- if(!d||!o||!l||!p){alert('Vyplň datum, tachometr, litry a cenu.');return}
- if(!total) total=Math.round(l*p*100)/100;
+ if(!d||o===null||o<0||l===null||l<=0||p===null||p<=0){alert('Vyplň platné datum, tachometr, litry a cenu.');return}
+ if(total===null||total<=0) total=Math.round(l*p*100)/100;
+ const isEditing=editingRefuelIndex!==null;
  const last=data.length?Math.max(...data.map(x=>Number(x.odometer)||0)):0;
- if(last && (o<last || o>last+2000)){
+ if(!isEditing && last && (o<last || o>last+2000)){
    if(!confirm(`Tachometr ${o.toLocaleString('cs-CZ')} km vypadá podezřele. Poslední záznam je ${last.toLocaleString('cs-CZ')} km. Opravdu uložit?`)) return;
  }
- data.push({date:d,odometer:o,liters:l,price:p,total,station:s,full:f});
- activeVehicle.currentOdo=Math.max(Number(activeVehicle.currentOdo)||0,o);
- data.sort((a,b)=>a.odometer-b.odometer);
+ const record={date:d,odometer:o,liters:l,price:p,total,station:s,full:f};
+ if(isEditing){
+   if(!data[editingRefuelIndex]){alert('Záznam už neexistuje.');return;}
+   data[editingRefuelIndex]=record;
+ }else data.push(record);
+ data.sort((a,b)=>Number(a.odometer)-Number(b.odometer));
+ activeVehicle.currentOdo=data.length?Math.max(...data.map(x=>Number(x.odometer)||0)):0;
  persistVehicle();
- closeModal();render();
+ closeModal();
+ render();
+ if(document.getElementById('statsModal').style.display==='flex') openStats();
+ if(document.getElementById('historyModal').style.display==='flex') openHistory();
 }
 function calc(){let fs=data.filter(x=>x.full),ints=[];for(let i=1;i<fs.length;i++){let dist=fs[i].odometer-fs[i-1].odometer;if(dist<=0)continue;let ls=data.filter(x=>x.odometer>fs[i-1].odometer&&x.odometer<=fs[i].odometer).reduce((a,x)=>a+x.liters,0);ints.push(ls/dist*100)}return ints.length?ints[ints.length-1]:null;}
 function formatDateTime(v){
@@ -1038,11 +1067,11 @@ function render(){
 function openHistory(){
  let box=document.getElementById('allHistory');
  box.innerHTML=[...data].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>{
-   const f=formatDateTime(x.date);const av=getRecordConsumption(x);
+   const f=formatDateTime(x.date);const av=getRecordConsumption(x);const recordIndex=data.indexOf(x);
    return `<div class="history-item">
     <div><b>${f.day}.${f.date}</b>${f.time?`<br><small>${f.time}</small>`:''}</div>
-    <div><b>${x.station||'Čerpací stanice'}</b><br><small>${Number(x.odometer).toLocaleString('cs-CZ')} km · ${Number(x.liters).toFixed(2)} l · ${Number(x.price).toFixed(2)} Kč/l</small><br><small style="color:#1769d1;font-weight:700">Ø ${av!=null?av.toFixed(2)+' l/100 km':'—'}</small></div>
-    <div>${Number(x.total).toFixed(0)} Kč ${x.full?'✓':''}</div>
+    <div><b>${escapeHtml(x.station||'Čerpací stanice')}</b><br><small>${Number(x.odometer).toLocaleString('cs-CZ')} km · ${Number(x.liters).toFixed(2)} l · ${Number(x.price).toFixed(2)} Kč/l</small><br><small style="color:#1769d1;font-weight:700">Ø ${av!=null?av.toFixed(2)+' l/100 km':'—'}</small></div>
+    <div style="text-align:right;white-space:nowrap">${Number(x.total).toLocaleString('cs-CZ',{maximumFractionDigits:0})} Kč ${x.full?'✓':''}<br><button type="button" onclick="editRefuel(${recordIndex})" style="margin-top:6px;padding:6px 9px;border:1px solid var(--blue);border-radius:7px;background:#fff;color:var(--blue);font-weight:700">Upravit</button></div>
    </div>`;
  }).join('');
  document.getElementById('historyModal').style.display='flex';
