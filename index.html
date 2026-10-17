@@ -83,7 +83,7 @@ label{font-size:11px;font-weight:700}input{width:100%;margin-top:4px;border:1px 
 .refuel-station{font-weight:800;font-size:12px;display:block;line-height:1.15}
 .refuel-sub{display:block;color:#718096;font-size:10px;margin-top:4px;line-height:1.2}
 .refuel-liters{font-weight:700;text-align:right;font-size:11px;white-space:nowrap}
-.refuel-price{text-align:right;font-weight:800;font-size:12px;white-space:nowrap}color:var(--blue)!important;
+.refuel-price{text-align:right;font-weight:800;font-size:12px;white-space:nowrap;color:var(--blue)!important}
 .refuel-arrow{color:#8d99a6;text-align:right}
 .stats-modal{display:none;position:fixed;inset:0;background:#10243b88;z-index:65;align-items:center;justify-content:center;padding:14px}
 .stats-box{background:#fff;width:min(560px,100%);border-radius:15px;padding:17px;max-height:92vh;overflow:auto}
@@ -537,6 +537,8 @@ body.dark .cg-dot{stroke:#1b2430}body.dark .cg-info{color:#d5dee8}
  bottom:calc(var(--navh,74px) + 10px)!important;margin:0!important;padding:0 14px!important;z-index:30!important;pointer-events:none;display:block!important}
 .actions .action{width:100%!important;pointer-events:auto;padding:15px 10px!important;font-size:16px!important;border-radius:12px!important;box-shadow:0 4px 14px #1769d155}
 
+/* Cena tankování na titulní obrazovce používá aktuální barvu motivu */
+.refuel-price{color:var(--blue)!important}
 /* Spodní panel má být celý bílý, tlačítka bez samostatného podbarvení */
 nav.bottom,
 nav.bottom .nav {
